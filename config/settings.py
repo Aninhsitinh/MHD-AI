@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", 5432))
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "mhd_valuation")
     POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "mhd_postgres_2026")
+    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "")
     
     @property
     def DATABASE_URL(self) -> str:

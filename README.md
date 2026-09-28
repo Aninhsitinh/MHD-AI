@@ -93,7 +93,7 @@ docker compose up --build -d
 | **Frontend Web App** | [http://localhost](http://localhost) | Giao diện định giá & đối chứng BĐS |
 | **FastAPI Swagger Docs**| [http://localhost:8000/docs](http://localhost:8000/docs) | Tài liệu API tương tác trực tiếp |
 | **Health Check Endpoint**| [http://localhost:8000/health](http://localhost:8000/health) | Kiểm tra trạng thái hệ thống |
-| **pgAdmin 4 (Tùy chọn)**| [http://localhost:5050](http://localhost:5050) | Quản trị CSDL PostGIS (User: `admin@mhd.vn`, Pass: `admin_password_2026`) |
+| **pgAdmin 4 (Tùy chọn)**| [http://localhost:5050](http://localhost:5050) | Quản trị CSDL PostGIS (Cấu hình qua file .env) |
 
 Dừng toàn bộ hệ thống:
 ```bash
