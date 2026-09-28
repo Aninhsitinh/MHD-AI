@@ -104,3 +104,6 @@ tmp/
 .gemini/
 .agents/
 brain/
+
+# Local Documentation (Keep off GitHub)
+co_che_dinh_gia_mhd_avm.html
