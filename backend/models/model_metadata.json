@@ -1,0 +1,65 @@
+{
+  "model_version": "mhd-v2-catboost",
+  "training_samples": 34955,
+  "avg_mape": 35.61,
+  "avg_r2": 0.7227,
+  "numerical_features": [
+    "area",
+    "bedroom_count",
+    "bathroom_count",
+    "floor_count",
+    "road_width",
+    "frontage_width",
+    "latitude",
+    "longitude"
+  ],
+  "categorical_features": [
+    "property_type",
+    "province_name",
+    "district_name",
+    "house_direction"
+  ],
+  "nlp_features": [
+    "has_so_do",
+    "is_lo_goc",
+    "is_no_hau",
+    "is_oto_do"
+  ],
+  "all_features": [
+    "area",
+    "bedroom_count",
+    "bathroom_count",
+    "floor_count",
+    "road_width",
+    "frontage_width",
+    "latitude",
+    "longitude",
+    "property_type",
+    "province_name",
+    "district_name",
+    "house_direction",
+    "has_so_do",
+    "is_lo_goc",
+    "is_no_hau",
+    "is_oto_do"
+  ],
+  "feature_importances": {
+    "area": 28.91,
+    "property_type": 21.88,
+    "district_name": 17.95,
+    "province_name": 16.59,
+    "latitude": 5.43,
+    "longitude": 2.8,
+    "bedroom_count": 1.7,
+    "frontage_width": 1.43,
+    "bathroom_count": 1.01,
+    "floor_count": 0.64,
+    "road_width": 0.61,
+    "house_direction": 0.42,
+    "is_lo_goc": 0.33,
+    "has_so_do": 0.23,
+    "is_no_hau": 0.07,
+    "is_oto_do": 0.01
+  },
+  "market_discount_factor": 0.93
+}

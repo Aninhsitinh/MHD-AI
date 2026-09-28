@@ -1,0 +1,26 @@
+# Core Data Processing
+pandas>=2.2.0
+pyarrow>=15.0.0
+fastparquet>=2024.2.0
+numpy>=1.26.0
+huggingface_hub>=0.23.0
+tqdm>=4.66.0
+requests>=2.31.0
+
+# Database & Geospatial
+psycopg2-binary>=2.9.9
+SQLAlchemy>=2.0.29
+GeoAlchemy2>=0.14.7
+shapely>=2.0.3
+
+# Machine Learning
+catboost>=1.2.5
+scikit-learn>=1.4.2
+
+# Backend & Cache
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.0
+pydantic-settings>=2.2.1
+python-dotenv>=1.0.1
+redis>=5.0.3

@@ -1,0 +1,106 @@
+# ==============================================================================
+# MHD REAL ESTATE TECH • GITIGNORE CONFIGURATION
+# ==============================================================================
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Node.js & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+.eslintcache
+
+# Machine Learning Training Logs & Artifacts
+catboost_info/
+
+# Raw Large Datasets (keep processed parquet)
+data/raw/
+data/temp/
+*.csv
+*.xlsx
+*.xls
+*.zip
+*.tar.gz
+*.7z
+# Keep the clean processed parquet data
+!data/processed/data_mhd_clean.parquet
+!backend/data/processed/data_mhd_clean.parquet
+
+# Database Volume Mounts
+postgres_data/
+redis_data/
+postgis_data/
+
+# IDE & Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+.project
+.pydevproject
+.settings/
+
+# Operating System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+[Dd]esktop.ini
+
+# Logs & Temporary Files
+logs/
+*.log
+temp/
+tmp/
+.cache/
+.pytest_cache/
+
+# Agent IDE & Assistant Cache
+.gemini/
+.agents/
+brain/

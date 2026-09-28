@@ -1,0 +1,105 @@
+# ==============================================================================
+# MHD REAL ESTATE TECH • FULL STACK DOCKER COMPOSE
+# Services: PostGIS 16 + Redis 7 + FastAPI Backend + React/Nginx Frontend + pgAdmin
+# ==============================================================================
+
+services:
+  # 1. PostgreSQL 16 with PostGIS 3.4
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: mhd_postgis_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mhd_postgres_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-mhd_valuation}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./database/01_init_postgis.sql:/docker-entrypoint-initdb.d/01_init_postgis.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-mhd_valuation}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mhd_network
+
+  # 2. Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: mhd_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - mhd_network
+
+  # 3. FastAPI AI Backend Microservice
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mhd_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_HOST=postgis
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=${POSTGRES_DB:-mhd_valuation}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-mhd_postgres_2026}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MARKET_DISCOUNT_FACTOR=0.93
+    depends_on:
+      postgis:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - mhd_network
+
+  # 4. Frontend Web Server & Reverse Proxy (React SPA + Nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mhd_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - mhd_network
+
+  # 5. pgAdmin 4 for Database Web UI (Optional)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: mhd_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@mhd.vn}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin_password_2026}
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgis
+    networks:
+      - mhd_network
+
+networks:
+  mhd_network:
+    driver: bridge
+
+volumes:
+  postgis_data:
+    driver: local
+  redis_data:
+    driver: local

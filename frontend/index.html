@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MHD Valuation — Hệ Thống Thẩm Định Giá Bất Động Sản</title>
+    <meta name="description"
+        content="Hệ thống thẩm định giá bất động sản tự động ứng dụng AI. Phương pháp so sánh thị trường (CMA) kết hợp CatBoost ML & GIS PostGIS.">
+    <link rel="icon" type="image/png" href="/logomhd.png">
+
+    <!-- Google Fonts: Inter (body/mono) + DM Sans (headings/numbers) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Leaflet GIS Map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <link rel="stylesheet" href="/src/styles/main.css">
+</head>
+<body>
+    <!-- ════════ TOP BAR (TINIX BENCHMARK ARCHITECTURE) ════════ -->
+    <header class="topbar">
+        <div class="topbar-container">
+            <div class="topbar-left">
+                <a href="/" class="topbar-brand">
+                    <img src="/logomhd.png" alt="MHD Valuation" class="topbar-logo"
+                        onerror="this.onerror=null; this.src='logomhd.png';">
+                    <div class="topbar-brand-text">
+                        <span class="topbar-name">MHD Valuation</span>
+                        <span class="topbar-sub">HỆ THỐNG ĐỊNH GIÁ BẤT ĐỘNG SẢN AI</span>
+                    </div>
+                </a>
+
+                <!-- ── PRIMARY NAVIGATION LINKS ── -->
+                <nav class="topbar-nav" id="mainNavBar">
+                    <button type="button" class="nav-tab-btn active" id="navHomeBtn" onclick="switchMainTab('home')">
+                        Trang chủ
+                    </button>
+                    <button type="button" class="nav-tab-btn" id="navCompareBtn" onclick="switchMainTab('compare')">
+                        So sánh giá
+                        <span class="nav-comp-count" id="navCompCount">0</span>
+                    </button>
+                    <button type="button" class="nav-tab-btn" id="navProjectsBtn" onclick="goToProjects()">
+                        Dự án
+                    </button>
+                    <button type="button" class="nav-tab-btn" id="navNewsBtn" onclick="goToNews()">
+                        Tin tức
+                    </button>
+                    <button type="button" class="nav-tab-btn" onclick="scrollToContact()">
+                        Liên hệ
+                    </button>
+                </nav>
+            </div>
+
+            <!-- ── RIGHT ACTIONS: THEME PILL, RESET, HOTLINE CTA & MOBILE TOGGLE ── -->
+            <div class="topbar-actions">
+                <!-- Segmented Light/Dark Switcher -->
+                <div class="theme-segmented-switch" role="group" aria-label="Theme selector">
+                    <button type="button" class="theme-seg-btn" id="themeBtnLight" onclick="setThemeMode('light')" title="Giao diện Sáng">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="5"></circle>
+                            <line x1="12" y1="1" x2="12" y2="3"></line>
+                            <line x1="12" y1="21" x2="12" y2="23"></line>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                            <line x1="1" y1="12" x2="3" y2="12"></line>
+                            <line x1="21" y1="12" x2="23" y2="12"></line>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                        </svg>
+                    </button>
+                    <button type="button" class="theme-seg-btn active" id="themeBtnDark" onclick="setThemeMode('dark')" title="Giao diện Tối">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Reset Form Button -->
+                <button type="button" class="btn-topbar-reset" onclick="resetFormToDefaults()" title="Làm mới lại toàn bộ form dữ liệu">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                    </svg>
+                </button>
+
+                <!-- Hotline CTA with Glowing Pulse Dot -->
+                <a href="tel:02835153516" class="topbar-hotline-cta" title="Hotline tư vấn thẩm định giá chuyên sâu">
+                    <span class="cta-pulse-dot"></span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                    </svg>
+                    <span>028 3515 3516</span>
+                </a>
+
+                <!-- Mobile Hamburger Toggle -->
+                <button type="button" class="mobile-nav-toggle" id="mobileNavToggle" onclick="toggleMobileNav()" aria-label="Mở Menu Điều Hướng">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Drawer Navigation -->
+        <div class="mobile-nav-drawer" id="mobileNavDrawer">
+            <a href="javascript:void(0)" class="mobile-nav-link active" onclick="switchMainTab('home'); toggleMobileNav();">
+                Trang chủ
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-link" onclick="switchMainTab('compare'); toggleMobileNav();">
+                <span>So sánh giá</span>
+                <span class="nav-comp-count" id="navCompCountMobile">0</span>
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-link" onclick="goToProjects(); toggleMobileNav();">
+                Dự án
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-link" onclick="goToNews(); toggleMobileNav();">
+                Tin tức
+            </a>
+            <a href="javascript:void(0)" class="mobile-nav-link" onclick="scrollToContact(); toggleMobileNav();">
+                Liên hệ tư vấn
+            </a>
+        </div>
+    </header>
+
+    <!-- ════════ VIEW 1: TRANG CHỦ (HERO, OPENSTREETMAP & KẾT QUẢ THẨM ĐỊNH) ════════ -->
+    <div id="homeView">
+
+        <!-- ── HERO SECTION: 2 COLUMNS (TINIX BENCHMARK STYLE) ── -->
+        <section class="hero-section">
+            <div class="hero-container">
+                <div class="hero-grid">
+                    <!-- Col 1: Hero Pitch & Live Metrics -->
+                    <div class="hero-left">
+                        <div class="hero-badge-wrap">
+                            <span class="badge-glow-dot"></span>
+                            <span>#1 Nền Tảng Thẩm Định Giá BĐS AI</span>
+                        </div>
+
+                        <h1 class="hero-title">
+                            Định giá bất động sản chính xác <span class="brand-highlight">trong 30 giây</span>
+                        </h1>
+
+                        <!-- Dynamic Metrics Counter -->
+                        <div class="hero-stats-row">
+                            <div class="hero-stat-card">
+                                <div class="hero-stat-num">50,000+</div>
+                                <div class="hero-stat-label">Giao dịch đã xác thực</div>
+                            </div>
+                            <div class="hero-stat-card">
+                                <div class="hero-stat-num">1,200+</div>
+                                <div class="hero-stat-label">Lượt định giá / ngày</div>
+                            </div>
+                            <div class="hero-stat-card">
+                                <div class="hero-stat-num">98.6%</div>
+                                <div class="hero-stat-label">Độ tương thích thị trường</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Col 2: Interactive AI Valuation Form Card -->
+                    <div class="hero-right">
+                        <div class="hero-form-card">
+                            <div class="panel-header"
+                                style="border:none; padding:18px 22px 14px; background:transparent;">
+                                <div class="panel-title" style="font-size:15px; font-weight:800;">
+                                    <div class="icon-box"
+                                        style="background:var(--brand-subtle); color:var(--brand); border-color:var(--brand-border);">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                        </svg>
+                                    </div>
+                                    Hồ Sơ Tài Sản Thẩm Định
+                                </div>
+                                <span class="panel-tag"
+                                    style="background:var(--brand-subtle); color:var(--brand); border-color:var(--brand-border);">BĐS
+                                    DÂN CƯ</span>
+                            </div>
+
+                            <div class="panel-body" style="padding:0 22px 22px;">
+                                <!-- 1. Location -->
+                                <div class="section-label">
+                                    <span class="section-label-text">
+                                        <span class="svg-icon" style="color:var(--brand);"><svg width="11" height="11"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                                <circle cx="12" cy="10" r="3"></circle>
+                                            </svg></span>
+                                        Vị Trí Hành Chính
+                                    </span>
+                                </div>
+
+                                <div class="search-locate-bar">
+                                    <div class="search-wrap">
+                                        <span class="svg-icon" style="color:var(--text-4);"><svg width="13" height="13"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            </svg></span>
+                                        <input type="text" id="quickAddressSearch"
+                                            placeholder="Tìm kiếm địa chỉ BĐS... (VD: 52 Trần Bình Trọng, TP.HCM)">
+                                        <button type="button" class="btn-icon" id="btnSearchAddress"
+                                            title="Tìm kiếm địa chỉ">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <circle cx="11" cy="11" r="8"></circle>
+                                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="btn-icon" onclick="getCurrentLocation()"
+                                            title="Định vị GPS">
+                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <line x1="22" y1="12" x2="18" y2="12"></line>
+                                                <line x1="6" y1="12" x2="2" y2="12"></line>
+                                                <line x1="12" y1="6" x2="12" y2="2"></line>
+                                                <line x1="12" y1="22" x2="12" y2="18"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div id="searchDropdown" class="search-dropdown"></div>
+                                </div>
+
+                                <div class="addr-grid">
+                                    <div class="input-group">
+                                        <label class="input-label">Tỉnh / Thành phố *</label>
+                                        <input type="text" id="province_name" class="form-control" value=""
+                                            placeholder="VD: TP. Hồ Chí Minh" required>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Quận / Huyện *</label>
+                                        <input type="text" id="district_name" class="form-control" value=""
+                                            placeholder="VD: Bình Thạnh, Quận 1..." required>
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Phường / Xã</label>
+                                        <input type="text" id="ward_name" class="form-control" value=""
+                                            placeholder="VD: Bình Lợi Trung, Bến Nghé...">
+                                    </div>
+                                    <div class="input-group">
+                                        <label class="input-label">Số nhà, tên đường</label>
+                                        <input type="text" id="street_name" class="form-control" value=""
+                                            placeholder="VD: 52 Trần Bình Trọng...">
+                                    </div>
+                                </div>
+
+                                <!-- 2. Property Type -->
+                                <div class="section-label">
+                                    <span class="section-label-text">
+                                        <span class="svg-icon" style="color:var(--brand);"><svg width="11" height="11"
+                                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="3" width="7" height="7"></rect>
+                                                <rect x="14" y="3" width="7" height="7"></rect>
+                                                <rect x="14" y="14" width="7" height="7"></rect>
+                                                <rect x="3" y="14" width="7" height="7"></rect>
+                                            </svg></span>
+                                        Phân Khúc BĐS
+                                    </span>
+                                </div>
+
+                                <select id="property_type" style="display:none;" onchange="updateFormByPropertyType()">
+                                    <option value="Nhà riêng" selected>Nhà riêng</option>
+                                    <option value="Căn hộ chung cư">Căn hộ chung cư</option>
+                                    <option value="Đất nền">Đất nền</option>
+                                    <option value="Biệt thự">Biệt thự</option>
+                                    <option value="Shophouse">Shophouse</option>
+                                </select>
+
+                                <div class="prop-selector property-tactile-selector">
+                                    <button type="button" class="prop-tab-btn active" data-type="Nhà riêng"
+                                        onclick="setPropTypeTab('Nhà riêng')">
+                                        <span class="svg-icon"><svg width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                            </svg></span>
+                                        <span>Nhà riêng</span>
+                                    </button>
+                                    <button type="button" class="prop-tab-btn" data-type="Căn hộ chung cư"
+                                        onclick="setPropTypeTab('Căn hộ chung cư')">
+                                        <span class="svg-icon"><svg width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                                                <line x1="9" y1="6" x2="9.01" y2="6"></line>
+                                                <line x1="15" y1="6" x2="15.01" y2="6"></line>
+                                                <line x1="9" y1="10" x2="9.01" y2="10"></line>
+                                                <line x1="15" y1="10" x2="15.01" y2="10"></line>
+                                                <line x1="9" y1="14" x2="9.01" y2="14"></line>
+                                                <line x1="15" y1="14" x2="15.01" y2="14"></line>
+                                                <line x1="9" y1="18" x2="15" y2="18"></line>
+                                            </svg></span>
+                                        <span>Chung cư</span>
+                                    </button>
+                                    <button type="button" class="prop-tab-btn" data-type="Đất nền"
+                                        onclick="setPropTypeTab('Đất nền')">
+                                        <span class="svg-icon"><svg width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                                <polyline points="2 17 12 22 22 17"></polyline>
+                                                <polyline points="2 12 12 17 22 12"></polyline>
+                                            </svg></span>
+                                        <span>Đất nền</span>
+                                    </button>
+                                    <button type="button" class="prop-tab-btn" data-type="Biệt thự"
+                                        onclick="setPropTypeTab('Biệt thự')">
+                                        <span class="svg-icon"><svg width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M12 3L2 12h3v8h14v-8h3L12 3z"></path>
+                                                <rect x="10" y="14" width="4" height="6"></rect>
+                                            </svg></span>
+                                        <span>Biệt thự</span>
+                                    </button>
+                                    <button type="button" class="prop-tab-btn" data-type="Shophouse"
+                                        onclick="setPropTypeTab('Shophouse')">
+                                        <span class="svg-icon"><svg width="14" height="14" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M3 3h18l-2 9H5L3 3z"></path>
+                                                <path d="M3 21h18v-7H3v7z"></path>
+                                                <path d="M9 21v-4h6v4"></path>
+                                            </svg></span>
+                                        <span>Shophouse</span>
+                                    </button>
+                                </div>
+
+                                <div class="hint-box" id="propertyTypeHint">
+                                    <span class="svg-icon" style="color:var(--brand);"><svg width="13" height="13"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                        </svg></span>
+                                    <div id="propertyTypeHintText">Hiển thị đầy đủ thông số kết cấu (số tầng, phòng ngủ,
+                                        WC), diện tích đất và ngõ vào.</div>
+                                </div>
+
+                                <!-- 3. Area & Specs -->
+                                <form id="valuationForm">
+                                    <div class="area-group" id="group_area">
+                                        <div class="area-top">
+                                            <label class="input-label" id="label_area">Diện tích khuôn viên đất <span
+                                                    style="color:var(--brand);">*</span></label>
+                                            <div class="area-val"><span id="areaSliderVal">--</span> m²</div>
+                                        </div>
+                                        <input type="range" min="15" max="350" step="1" value="50" class="area-slider"
+                                            id="areaRangeSlider" oninput="syncAreaSlider(this.value)">
+                                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                                            <div class="quick-presets">
+                                                <button type="button" class="preset-btn"
+                                                    onclick="setAreaVal(50)">50m²</button>
+                                                <button type="button" class="preset-btn"
+                                                    onclick="setAreaVal(75)">75m²</button>
+                                                <button type="button" class="preset-btn"
+                                                    onclick="setAreaVal(100)">100m²</button>
+                                                <button type="button" class="preset-btn"
+                                                    onclick="setAreaVal(150)">150m²</button>
+                                                <button type="button" class="preset-btn"
+                                                    onclick="setAreaVal(250)">250m²</button>
+                                            </div>
+                                            <div class="input-with-unit" style="width:110px;">
+                                                <input type="number" step="0.1" id="area" class="form-control" value=""
+                                                    placeholder="Nhập DT" style="padding:4px 6px; font-size:11px;"
+                                                    oninput="syncAreaInput(this.value)">
+                                                <span class="unit-tag" style="right:4px;">m²</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="specs-grid">
+                                        <div class="input-group" id="group_frontage_width">
+                                            <label class="input-label">Mặt tiền</label>
+                                            <div class="input-with-unit">
+                                                <input type="number" step="0.1" id="frontage_width" class="form-control"
+                                                    value="" placeholder="VD: 4.5">
+                                                <span class="unit-tag">m</span>
+                                            </div>
+                                        </div>
+                                        <div class="input-group" id="group_road_width">
+                                            <label class="input-label">Ngõ vào</label>
+                                            <div class="input-with-unit">
+                                                <input type="number" step="0.1" id="road_width" class="form-control"
+                                                    value="" placeholder="VD: 4.0">
+                                                <span class="unit-tag">m</span>
+                                            </div>
+                                        </div>
+                                        <div class="input-group" id="group_floor_count">
+                                            <label class="input-label">Số tầng</label>
+                                            <div class="input-with-unit">
+                                                <input type="number" id="floor_count" class="form-control" value=""
+                                                    placeholder="VD: 2">
+                                                <span class="unit-tag">tầng</span>
+                                            </div>
+                                        </div>
+                                        <div class="input-group" id="group_bedroom_count">
+                                            <label class="input-label">Phòng ngủ</label>
+                                            <div class="input-with-unit">
+                                                <input type="number" id="bedroom_count" class="form-control" value=""
+                                                    placeholder="VD: 3">
+                                                <span class="unit-tag">PN</span>
+                                            </div>
+                                        </div>
+                                        <div class="input-group" id="group_bathroom_count">
+                                            <label class="input-label">Phòng vệ sinh</label>
+                                            <div class="input-with-unit">
+                                                <input type="number" id="bathroom_count" class="form-control" value=""
+                                                    placeholder="VD: 2">
+                                                <span class="unit-tag">WC</span>
+                                            </div>
+                                        </div>
+                                        <div class="input-group" id="group_house_direction"
+                                            style="grid-column: span 2;">
+                                            <label class="input-label" id="label_house_direction">Hướng nhà
+                                                chính</label>
+                                            <select id="house_direction" class="form-control">
+                                                <option value="" selected>-- Chọn hướng nhà (nếu có) --</option>
+                                                <option value="Đông Nam">Đông Nam</option>
+                                                <option value="Nam">Nam</option>
+                                                <option value="Đông">Đông</option>
+                                                <option value="Bắc">Bắc</option>
+                                                <option value="Tây Nam">Tây Nam</option>
+                                                <option value="Tây">Tây</option>
+                                                <option value="Tây Bắc">Tây Bắc</option>
+                                                <option value="Đông Bắc">Đông Bắc</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- 4. Features -->
+                                    <div class="section-label">
+                                        <span class="section-label-text">
+                                            <span class="svg-icon" style="color:var(--brand);"><svg width="11"
+                                                    height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                    stroke-width="2">
+                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                                </svg></span>
+                                            Pháp lý & Thế đất
+                                        </span>
+                                    </div>
+
+                                    <div class="chips-grid features-grid">
+                                        <label class="chip feature-chip-card" id="nlp_has_so_do">
+                                            <input type="checkbox" id="has_so_do" onchange="syncChipStyle(this)">
+                                            <div class="chip-label feature-chip-label">
+                                                <span class="svg-icon" style="color:var(--text-4);"><svg width="12"
+                                                        height="12" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="2">
+                                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                                        <polyline points="9 12 11 14 15 10"></polyline>
+                                                    </svg></span>
+                                                <span id="text_has_so_do">Sổ đỏ / Sổ hồng</span>
+                                            </div>
+                                        </label>
+                                        <label class="chip feature-chip-card" id="nlp_is_oto_do">
+                                            <input type="checkbox" id="is_oto_do" onchange="syncChipStyle(this)">
+                                            <div class="chip-label feature-chip-label">
+                                                <span class="svg-icon" style="color:var(--text-4);"><svg width="12"
+                                                        height="12" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="2">
+                                                        <rect x="3" y="11" width="18" height="8" rx="2"></rect>
+                                                        <path d="M5 11l2-6h10l2 6"></path>
+                                                        <circle cx="7.5" cy="15.5" r="1.5"></circle>
+                                                        <circle cx="16.5" cy="15.5" r="1.5"></circle>
+                                                    </svg></span>
+                                                <span>Ngõ ô tô vào được</span>
+                                            </div>
+                                        </label>
+                                        <label class="chip feature-chip-card" id="nlp_is_lo_goc">
+                                            <input type="checkbox" id="is_lo_goc" onchange="syncChipStyle(this)">
+                                            <div class="chip-label feature-chip-label">
+                                                <span class="svg-icon" style="color:var(--text-4);"><svg width="12"
+                                                        height="12" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="2">
+                                                        <polygon points="12 2 19 21 12 17 5 21 12 2"></polygon>
+                                                    </svg></span>
+                                                <span id="text_is_lo_goc">Vị trí Lô góc 2 mặt</span>
+                                            </div>
+                                        </label>
+                                        <label class="chip feature-chip-card" id="nlp_is_no_hau">
+                                            <input type="checkbox" id="is_no_hau" onchange="syncChipStyle(this)">
+                                            <div class="chip-label feature-chip-label">
+                                                <span class="svg-icon" style="color:var(--text-4);"><svg width="12"
+                                                        height="12" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="2">
+                                                        <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                                        <polyline points="17 6 23 6 23 12"></polyline>
+                                                    </svg></span>
+                                                <span>Thế đất nở hậu</span>
+                                            </div>
+                                        </label>
+                                    </div>
+
+                                    <input type="hidden" id="customer_phone" value="">
+
+                                    <button type="submit" class="btn-submit btn-launch-valuation" id="btnSubmit">
+                                        <span class="svg-icon"><svg width="15" height="15" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                                            </svg></span>
+                                        <span id="btnText">XÁC ĐỊNH GIÁ TRỊ THẨM ĐỊNH</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── OPENSTREETMAP WORKSPACE SECTION ── -->
+        <section class="map-section-workspace" id="mapSection">
+            <div class="section-container">
+                <div class="map-section-header">
+                    <div class="map-header-left">
+                        <div class="section-pill-badge">
+                            <span class="badge-glow-dot"></span>
+                            <span>HỆ THỐNG DỮ LIỆU ĐỊA CHÍNH & KHÔNG GIAN</span>
+                        </div>
+                        <h2 class="section-heading-title">
+                            Bản Đồ Không Gian Thẩm Định <span class="brand-highlight">(OpenStreetMap & PostGIS)</span>
+                        </h2>
+                        <p class="section-subtitle-desc">
+                            Kéo thả ghim đỏ để chọn vị trí tài sản. Hệ thống tự động phân giải địa chỉ hành chính (Tỉnh,
+                            Quận, Phường), tính bán kính không gian và quét 5 BĐS đối chứng lân cận.
+                        </p>
+                    </div>
+
+                    <div class="map-toolbar-integrated">
+                        <div class="map-coord-chip" title="Tọa độ GPS hiện tại">
+                            <span class="coord-live-dot"></span>
+                            <span class="coord-label">GPS:</span>
+                            <span class="coords-badge" id="coordsBadge">10.77566°N, 106.70042°E</span>
+                        </div>
+                        <div class="city-tabs">
+                            <button type="button" class="city-btn quick-city-btn active"
+                                onclick="quickJump(10.775659, 106.700424, 'Quận 1, TP.HCM', this)">TP.HCM</button>
+                            <button type="button" class="city-btn quick-city-btn"
+                                onclick="quickJump(21.031340, 105.792510, 'Cầu Giấy, Hà Nội', this)">Hà Nội</button>
+                            <button type="button" class="city-btn quick-city-btn"
+                                onclick="quickJump(16.054407, 108.219806, 'Hải Châu, Đà Nẵng', this)">Đà Nẵng</button>
+                            <button type="button" class="city-btn quick-city-btn"
+                                onclick="quickJump(10.980450, 106.651870, 'Thủ Dầu Một, Bình Dương', this)">Bình
+                                Dương</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="map-frame-card">
+                    <!-- POI Interactive Layer Toolbar (SVG Icons only, No Emoji) -->
+                    <div class="poi-layer-bar" id="poiLayerBar">
+                        <div class="poi-bar-top">
+                            <div class="poi-bar-left">
+                                <span class="poi-bar-title">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76">
+                                        </polygon>
+                                    </svg>
+                                    TIỆN ÍCH NGOẠI KHU & HẠ TẦNG:
+                                </span>
+                                <div class="poi-mode-group">
+                                    <button type="button" class="poi-mode-btn active" id="btnModeRadius"
+                                        onclick="setPoiScopeMode('radius')"
+                                        title="Xem tiện ích trong bán kính 1.5km quanh tài sản đang định giá">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                        <span>Quanh BĐS (1.5km)</span>
+                                    </button>
+                                    <button type="button" class="poi-mode-btn" id="btnModeCitywide"
+                                        onclick="setPoiScopeMode('citywide')"
+                                        title="Xem mạng lưới tiện ích biểu tượng phủ sóng toàn bộ 22 Quận / Huyện TP.HCM">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                                            <path
+                                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                                            </path>
+                                        </svg>
+                                        <span>Toàn TP.HCM (22 Quận/Huyện)</span>
+                                    </button>
+                                </div>
+                                <button type="button" class="poi-toggle-all-btn" id="btnToggleAllPois"
+                                    onclick="toggleAllPoiCategories(this)" title="Bật / Tắt tất cả tiện ích">
+                                    Chọn tất cả
+                                </button>
+                            </div>
+                            <div class="poi-bar-right">
+                                <span class="poi-status-indicator" id="poiLoadingText">
+                                    <svg class="poi-spinner" width="11" height="11" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2">
+                                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                                    </svg>
+                                    <span id="poiStatusMsg">Đang tải tiện ích...</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- District Quick Switch Bar -->
+                        <div class="poi-district-bar" id="poiDistrictBar">
+                            <span class="poi-district-title">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                    <circle cx="12" cy="10" r="3"></circle>
+                                </svg>
+                                ĐIỂM ĐẾN QUẬN/HUYỆN:
+                            </span>
+                            <div class="poi-district-chips">
+                                <button type="button" class="district-chip active"
+                                    onclick="jumpToDistrict('Quận 1', 10.77566, 106.70042, this)">Quận 1</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 3', 10.78436, 106.68439, this)">Quận 3</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 4', 10.76010, 106.70420, this)">Quận 4</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 5', 10.75530, 106.66680, this)">Quận 5</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 6', 10.74780, 106.63580, this)">Quận 6</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 7', 10.73450, 106.72180, this)">Quận 7</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 8', 10.73750, 106.66850, this)">Quận 8</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 10', 10.77120, 106.66720, this)">Quận 10</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 11', 10.76350, 106.64950, this)">Quận 11</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Quận 12', 10.86720, 106.64150, this)">Quận 12</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Bình Thạnh', 10.80350, 106.70950, this)">Bình
+                                    Thạnh</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Gò Vấp', 10.83850, 106.66650, this)">Gò Vấp</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Phú Nhuận', 10.79850, 106.68250, this)">Phú Nhuận</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Tân Bình', 10.79850, 106.65350, this)">Tân Bình</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Tân Phú', 10.79150, 106.62850, this)">Tân Phú</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Bình Tân', 10.75150, 106.60250, this)">Bình Tân</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('TP. Thủ Đức', 10.84950, 106.77150, this)">TP. Thủ
+                                    Đức</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Bình Chánh', 10.68750, 106.59250, this)">Bình
+                                    Chánh</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Nhà Bè', 10.69550, 106.73450, this)">Nhà Bè</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Hóc Môn', 10.88450, 106.59150, this)">Hóc Môn</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Củ Chi', 10.97250, 106.49350, this)">Củ Chi</button>
+                                <button type="button" class="district-chip"
+                                    onclick="jumpToDistrict('Cần Giờ', 10.41150, 106.95450, this)">Cần Giờ</button>
+                            </div>
+                        </div>
+
+                        <div class="poi-filter-group">
+                            <button type="button" class="poi-filter-btn active" data-cat="admin"
+                                onclick="togglePoiCategory('admin', this)"
+                                title="Tòa nhà hành chính, UBND, Công an, Cơ quan nhà nước">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <line x1="3" y1="21" x2="21" y2="21"></line>
+                                    <line x1="6" y1="21" x2="6" y2="10"></line>
+                                    <line x1="18" y1="21" x2="18" y2="10"></line>
+                                    <path d="M12 3L2 9h20L12 3z"></path>
+                                </svg>
+                                <span>Cơ Quan & Tòa Nhà</span>
+                                <span class="poi-count" id="countAdmin">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="commercial"
+                                onclick="togglePoiCategory('commercial', this)"
+                                title="Trung tâm thương mại, Siêu thị lớn">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                                </svg>
+                                <span>TTTM & Siêu Thị</span>
+                                <span class="poi-count" id="countCommercial">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="hospitality"
+                                onclick="togglePoiCategory('hospitality', this)"
+                                title="Khách sạn, Resort, Tổ hợp lưu trú cao cấp">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M3 7v11"></path>
+                                    <path d="M21 18V11a2 2 0 0 0-2-2H9"></path>
+                                    <path d="M3 14h18"></path>
+                                    <circle cx="6" cy="10" r="2"></circle>
+                                </svg>
+                                <span>Khách Sạn & Dịch Vụ</span>
+                                <span class="poi-count" id="countHospitality">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="health"
+                                onclick="togglePoiCategory('health', this)"
+                                title="Bệnh viện, Phòng khám, Trung tâm y tế">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                                    <line x1="12" y1="8" x2="12" y2="16"></line>
+                                    <line x1="8" y1="12" x2="16" y2="12"></line>
+                                </svg>
+                                <span>Y Tế & Bệnh Viện</span>
+                                <span class="poi-count" id="countHealth">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="education"
+                                onclick="togglePoiCategory('education', this)"
+                                title="Trường học các cấp, Đại học, Học viện">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
+                                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
+                                </svg>
+                                <span>Giáo Dục & Trường Học</span>
+                                <span class="poi-count" id="countEducation">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="transit"
+                                onclick="togglePoiCategory('transit', this)"
+                                title="Ga Metro, Tàu hỏa, Bến xe buýt, Sân bay">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="4" y="3" width="16" height="13" rx="2"></rect>
+                                    <path d="M4 11h16"></path>
+                                    <circle cx="8" cy="14" r="1"></circle>
+                                    <circle cx="16" cy="14" r="1"></circle>
+                                    <path d="M7 19l-3 3M17 19l3 3"></path>
+                                </svg>
+                                <span>Giao Thông & Metro</span>
+                                <span class="poi-count" id="countTransit">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="finance"
+                                onclick="togglePoiCategory('finance', this)"
+                                title="Trụ sở ngân hàng, Chi nhánh giao dịch tài chính, ATM">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                                    <line x1="2" y1="10" x2="22" y2="10"></line>
+                                    <circle cx="12" cy="15" r="2"></circle>
+                                </svg>
+                                <span>Tài Chính & Ngân Hàng</span>
+                                <span class="poi-count" id="countFinance">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="green"
+                                onclick="togglePoiCategory('green', this)"
+                                title="Công viên cây xanh, Vườn hoa, Hồ nước sinh thái">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M12 19V5"></path>
+                                    <path d="M5 12l7-7 7 7"></path>
+                                    <path d="M7 17l5-5 5 5"></path>
+                                </svg>
+                                <span>Công Viên & Cảnh Quan</span>
+                                <span class="poi-count" id="countGreen">0</span>
+                            </button>
+                            <button type="button" class="poi-filter-btn active" data-cat="lifestyle"
+                                onclick="togglePoiCategory('lifestyle', this)"
+                                title="Nhà hàng, Quán cafe, Rạp phim, Thể thao / Gym">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                                    <line x1="6" y1="1" x2="6" y2="4"></line>
+                                    <line x1="10" y1="1" x2="10" y2="4"></line>
+                                    <line x1="14" y1="1" x2="14" y2="4"></line>
+                                </svg>
+                                <span>Ẩm Thực & Giải Trí</span>
+                                <span class="poi-count" id="countLifestyle">0</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Floating Search Area Button over Map -->
+                    <button type="button" id="btnSearchThisArea" class="map-floating-search-btn"
+                        onclick="searchCurrentViewportArea()" style="display:none;"
+                        title="Quét các tiện ích OSM xung quanh khu vực bạn đang xem">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                        <span id="btnSearchAreaText">Quét tiện ích tại khu vực này</span>
+                    </button>
+                    <div id="map" style="width:100%; height:520px; border-radius:0 0 12px 12px;"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── RESULTS DASHBOARD SECTION ── -->
+        <section class="results-section-workspace" id="resultsSection">
+            <div class="section-container">
+                <div class="results-section-header">
+                    <div class="results-header-content">
+                        <div class="section-pill-badge badge-green">
+                            <span class="badge-glow-dot-green"></span>
+                            <span>KẾT QUẢ THẨM ĐỊNH GIÁ TRỰC TUYẾN</span>
+                        </div>
+                        <h2 class="section-heading-title">
+                            Báo Cáo Giá Trị Bất Động Sản & <span class="brand-highlight">Yếu Tố Ảnh Hưởng</span>
+                        </h2>
+                        <p class="section-subtitle-desc">
+                            Dữ liệu được xử lý bởi mô hình định giá tự động (AVM) kết hợp phương pháp so sánh thị trường
+                            (CMA) chuẩn xác thực tế.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="results-workspace-grid">
+                    <div id="valuationResultWrapper" class="result-hero certificate-dossier-card" style="display:none;">
+                        <!-- ── 1. COMPACT SECURITY HEADER ── -->
+                        <div class="cert-modern-header">
+                            <div class="cert-header-left">
+                                <div class="cert-shield-badge">
+                                    <span class="cert-shield-icon">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                                            <polyline points="9 12 11 14 15 10"></polyline>
+                                        </svg>
+                                    </span>
+                                    <div class="cert-title-group">
+                                        <span class="cert-main-title">CHỨNG THƯ ĐỊNH GIÁ ĐIỆN TỬ</span>
+                                        <span class="cert-sub-tag">
+                                            <span class="cert-pulse-dot"></span>
+                                            Xác thực số AVM &bull; ISO/TC 307
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="cert-header-right">
+                                <span class="cert-code-pill" id="certSecurityCode">MHD-TDG-2026-8839</span>
+                                <button type="button" class="cert-print-btn" onclick="window.print()" title="Xuất báo cáo định giá / In PDF">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    <span>Xuất PDF</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- ── 2. HERO VALUATION & SPECTRUM RANGE GAUGE ── -->
+                        <div class="cert-hero-body">
+                            <!-- Main Price & Unit Price Row -->
+                            <div class="cert-pricing-row">
+                                <div class="cert-price-block">
+                                    <div class="cert-price-caption">Tổng Giá Trị Thẩm Định Ước Tính</div>
+                                    <div class="price-hero cert-price-display" id="predictedPrice">-- <span>Tỷ VNĐ</span></div>
+                                </div>
+                                <div class="cert-unit-badge">
+                                    <span class="cert-unit-label">Đơn giá ước tính</span>
+                                    <span class="kpi-value cert-unit-val" id="pricePerM2">-- Tr/m²</span>
+                                </div>
+                            </div>
+
+                            <!-- Visual Valuation Range Spectrum Gauge -->
+                            <div class="cert-range-gauge-wrap">
+                                <div class="gauge-labels-top">
+                                    <span class="gauge-end-label">Giá sàn: <b id="rangeMinVal">-- Tỷ</b></span>
+                                    <span class="gauge-target-label">Mục tiêu AI: <b id="rangeTargetVal">-- Tỷ</b></span>
+                                    <span class="gauge-end-label">Giá trần: <b id="rangeHighVal">-- Tỷ</b></span>
+                                </div>
+                                <div class="gauge-track-container">
+                                    <div class="gauge-track-bar"></div>
+                                    <div class="gauge-pointer" id="gaugePointer" style="left:50%;">
+                                        <div class="gauge-pointer-pin"></div>
+                                        <div class="gauge-pointer-dot"></div>
+                                    </div>
+                                </div>
+                                <!-- Hidden for backward compatibility -->
+                                <div id="priceRange" style="display:none;">Khoảng ước tính: -- VNĐ</div>
+                            </div>
+                        </div>
+
+                        <!-- ── 3. DUAL GRAPHICAL INDICATOR GRID ── -->
+                        <div class="cert-indicators-grid">
+                            <!-- Indicator A: Circular Radial Confidence Gauge -->
+                            <div class="cert-indicator-card">
+                                <div class="cert-ring-wrap">
+                                    <svg class="cert-ring-svg" width="52" height="52" viewBox="0 0 64 64">
+                                        <circle class="ring-bg" cx="32" cy="32" r="26"></circle>
+                                        <circle class="ring-progress" id="confidenceRingProgress" cx="32" cy="32" r="26" style="stroke-dasharray: 163.36; stroke-dashoffset: 24;"></circle>
+                                    </svg>
+                                    <div class="ring-center-text" id="ringCenterVal">--%</div>
+                                </div>
+                                <div class="cert-indicator-info">
+                                    <div class="cert-ind-title">Độ Tin Cậy Dữ Liệu</div>
+                                    <div class="cert-ind-rating" id="confidenceGradeTag">
+                                        <span class="kpi-value" id="confidenceScore" style="font-size:12.5px; font-weight:800;">--%</span>
+                                    </div>
+                                    <div class="cert-ind-sub">Đã đối soát 34.955 giao dịch</div>
+                                </div>
+                                <!-- Keep meter fill in DOM for zero regression -->
+                                <div style="display:none;" id="confidenceMeterFill"></div>
+                            </div>
+
+                            <!-- Indicator B: Appraisal Methodology & Proof Matrix -->
+                            <div class="cert-indicator-card" style="flex-direction:column; align-items:flex-start; justify-content:center; gap:6px;">
+                                <div class="cert-meta-item">
+                                    <span class="meta-icon-pill">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                                        </svg>
+                                    </span>
+                                    <div class="meta-item-texts">
+                                        <span class="meta-name">Phương Pháp</span>
+                                        <span class="meta-val">So sánh thị trường (CMA)</span>
+                                    </div>
+                                </div>
+                                <div class="cert-meta-item">
+                                    <span class="meta-icon-pill" style="color:var(--brand);">
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <path d="m4.93 4.93 4.24 4.24"></path>
+                                            <path d="m14.83 9.17 4.24-4.24"></path>
+                                            <path d="m14.83 14.83 4.24 4.24"></path>
+                                            <path d="m9.17 14.83-4.24 4.24"></path>
+                                        </svg>
+                                    </span>
+                                    <div class="meta-item-texts">
+                                        <span class="meta-name">Cơ Sở Dữ Liệu</span>
+                                        <span class="meta-val">5 BĐS đối chứng lân cận</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ── 4. MULTI-DIMENSIONAL RADAR ASSESSMENT (TINIX BENCHMARK) ── -->
+                        <div class="radar-card-section">
+                            <div class="radar-header">
+                                <div class="radar-title-group">
+                                    <span class="radar-pentagon-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                            <polygon points="12,2 22,8.5 18,21 6,21 2,8.5"></polygon>
+                                        </svg>
+                                    </span>
+                                    <span class="radar-title-text">Đánh giá đa chiều</span>
+                                </div>
+                                <span class="shap-badge-tag" style="color:var(--brand); background:rgba(224,84,0,0.1); border-color:rgba(224,84,0,0.25);">AI Khách Quan</span>
+                            </div>
+
+                            <!-- Interactive Pure SVG Radar Chart -->
+                            <div class="radar-chart-container">
+                                <svg class="radar-svg" viewBox="0 0 340 250">
+                                    <!-- Background Pentagon Grid Rings -->
+                                    <polygon points="170.0,115.0 189.0,128.8 181.8,151.2 158.2,151.2 151.0,128.8" fill="none" stroke="var(--border)" stroke-width="0.8" stroke-dasharray="2 2"></polygon>
+                                    <polygon points="170.0,95.0 208.0,122.6 193.5,167.4 146.5,167.4 132.0,122.6" fill="none" stroke="var(--border)" stroke-width="0.8"></polygon>
+                                    <polygon points="170.0,75.0 227.1,116.5 205.3,183.5 134.7,183.5 112.9,116.5" fill="none" stroke="var(--border)" stroke-width="0.8" stroke-dasharray="2 2"></polygon>
+                                    <polygon points="170.0,55.0 246.1,110.3 217.0,199.7 123.0,199.7 93.9,110.3" fill="none" stroke="var(--border)" stroke-width="1.2"></polygon>
+
+                                    <!-- 5 Axis Spoke Lines -->
+                                    <line x1="170.0" y1="135.0" x2="170.0" y2="55.0" stroke="var(--border)" stroke-width="1"></line>
+                                    <line x1="170.0" y1="135.0" x2="246.1" y2="110.3" stroke="var(--border)" stroke-width="1"></line>
+                                    <line x1="170.0" y1="135.0" x2="217.0" y2="199.7" stroke="var(--border)" stroke-width="1"></line>
+                                    <line x1="170.0" y1="135.0" x2="123.0" y2="199.7" stroke="var(--border)" stroke-width="1"></line>
+                                    <line x1="170.0" y1="135.0" x2="93.9" y2="110.3" stroke="var(--border)" stroke-width="1"></line>
+
+                                    <!-- Dynamic Data Polygon -->
+                                    <polygon id="radarPolygon" class="radar-polygon" points="170.0,63.0 238.0,113.0 208.0,190.0 128.0,192.0 102.0,113.0"></polygon>
+
+                                    <!-- Vertices Dots -->
+                                    <circle id="radarDot0" class="radar-dot" cx="170.0" cy="63.0" r="3.5"></circle>
+                                    <circle id="radarDot1" class="radar-dot" cx="238.0" cy="113.0" r="3.5"></circle>
+                                    <circle id="radarDot2" class="radar-dot" cx="208.0" cy="190.0" r="3.5"></circle>
+                                    <circle id="radarDot3" class="radar-dot" cx="128.0" cy="192.0" r="3.5"></circle>
+                                    <circle id="radarDot4" class="radar-dot" cx="102.0" cy="113.0" r="3.5"></circle>
+
+                                    <!-- Axis Text Labels -->
+                                    <text class="radar-axis-label" x="170.0" y="42.0" text-anchor="middle">Pháp lý</text>
+                                    <text class="radar-axis-label" x="258.0" y="114.0" text-anchor="start">Giá cả</text>
+                                    <text class="radar-axis-label" x="226.0" y="218.0" text-anchor="start">Vị trí</text>
+                                    <text class="radar-axis-label" x="114.0" y="218.0" text-anchor="end">Tiện ích</text>
+                                    <text class="radar-axis-label" x="82.0" y="114.0" text-anchor="end">Tiềm năng</text>
+                                </svg>
+                            </div>
+
+                            <!-- 2-Column Progress Bars matching Image 2 -->
+                            <div class="radar-bars-grid">
+                                <div class="radar-bar-item">
+                                    <div class="radar-bar-label-row">
+                                        <span class="radar-bar-name">PHÁP LÝ</span>
+                                        <span class="radar-bar-score" id="scorePhapLy">92%</span>
+                                    </div>
+                                    <div class="radar-progress-track">
+                                        <div class="radar-progress-fill" id="barPhapLy" style="width: 92%;"></div>
+                                    </div>
+                                </div>
+                                <div class="radar-bar-item">
+                                    <div class="radar-bar-label-row">
+                                        <span class="radar-bar-name">GIÁ CẢ</span>
+                                        <span class="radar-bar-score" id="scoreGiaCa">78%</span>
+                                    </div>
+                                    <div class="radar-progress-track">
+                                        <div class="radar-progress-fill" id="barGiaCa" style="width: 78%;"></div>
+                                    </div>
+                                </div>
+                                <div class="radar-bar-item">
+                                    <div class="radar-bar-label-row">
+                                        <span class="radar-bar-name">VỊ TRÍ</span>
+                                        <span class="radar-bar-score" id="scoreViTri">86%</span>
+                                    </div>
+                                    <div class="radar-progress-track">
+                                        <div class="radar-progress-fill" id="barViTri" style="width: 86%;"></div>
+                                    </div>
+                                </div>
+                                <div class="radar-bar-item">
+                                    <div class="radar-bar-label-row">
+                                        <span class="radar-bar-name">TIỆN ÍCH</span>
+                                        <span class="radar-bar-score" id="scoreTienIch">90%</span>
+                                    </div>
+                                    <div class="radar-progress-track">
+                                        <div class="radar-progress-fill" id="barTienIch" style="width: 90%;"></div>
+                                    </div>
+                                </div>
+                                <div class="radar-bar-item">
+                                    <div class="radar-bar-label-row">
+                                        <span class="radar-bar-name">TIỀM NĂNG</span>
+                                        <span class="radar-bar-score" id="scoreTiemNang">82%</span>
+                                    </div>
+                                    <div class="radar-progress-track">
+                                        <div class="radar-progress-fill" id="barTiemNang" style="width: 82%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Optional Collapsible TreeSHAP Drawer -->
+                            <div class="shap-toggle-wrap">
+                                <button type="button" class="btn-toggle-shap" onclick="toggleShapDetails()">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                                    </svg>
+                                    <span id="shapToggleText">Xem chi tiết 10 yếu tố TreeSHAP</span>
+                                    <svg id="shapToggleIcon" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Collapsible Drawer Container holding #valueDriversList -->
+                            <div id="shapDetailDrawer" style="display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);">
+                                <div style="font-size:11px; color:var(--text-3); margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span>Hệ số đóng góp biên độ giá theo mô hình học máy:</span>
+                                    <span style="font-weight:700; color:var(--brand);">TreeSHAP Model</span>
+                                </div>
+                                <div id="valueDriversList"></div>
+                            </div>
+                        </div>
+
+                        <!-- Proximity & Amenities Card (Pure SVG, No Emoji) -->
+                        <div class="amenities-proximity-card" id="amenitiesCard" style="display:none;">
+                            <div class="amenities-card-header">
+                                <span class="amenities-title">
+                                    <span class="svg-icon" style="color:var(--brand);"><svg width="13" height="13"
+                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76">
+                                            </polygon>
+                                        </svg></span>
+                                    Tiện Ích & Hạ Tầng Ngoại Khu Lân Cận (Bán kính 1.5km)
+                                </span>
+                                <span class="amenities-badge-tag" id="amenitiesTotalTag">0 địa điểm</span>
+                            </div>
+                            <div class="amenities-grid" id="amenitiesGridList">
+                                <!-- Dynamic amenity items rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Bridge Card to Compare View -->
+                        <div class="bridge-card" id="bridgeCompareCard" onclick="switchMainTab('compare')"
+                            style="display:none;">
+                            <div class="bridge-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                    <polyline points="2 17 12 22 22 17"></polyline>
+                                    <polyline points="2 12 12 17 22 12"></polyline>
+                                </svg>
+                            </div>
+                            <div class="bridge-info">
+                                <div class="bridge-title" id="bridgeTitleText">Đối Chiếu 5 Bất Động Sản Tương Đồng Lân
+                                    Cận</div>
+                                <div class="bridge-sub">Xem bảng so sánh chi tiết, hệ số điều chỉnh CMA & liên hệ tư vấn
+                                    chuyên sâu</div>
+                            </div>
+                            <button type="button" class="btn-bridge">
+                                <span>So Sánh Giá</span>
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Placeholder when no result -->
+                    <div id="resultPlaceholder" class="panel" style="padding:60px 24px; text-align:center;">
+                        <div class="svg-icon" style="color:var(--text-4); margin-bottom:16px;">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="1.5">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                        </div>
+                        <div
+                            style="font-family:var(--font-heading); font-size:16px; font-weight:700; color:var(--text-1); margin-bottom:6px;">
+                            Chưa có kết quả thẩm định</div>
+                        <div style="font-size:12.5px; color:var(--text-3); max-width:420px; margin:0 auto;">Nhập địa chỉ
+                            hoặc chọn vị trí trên bản đồ, điền thông số diện tích và nhấn "Xác định giá trị" để hệ thống
+                            tính toán giá trị tài sản.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div><!-- End #homeView -->
+
+    <!-- ════════ VIEW 2: SO SÁNH GIÁ & TƯ VẤN THẨM ĐỊNH (UNIFIED DASHBOARD) ════════ -->
+    <div id="compareView" class="compare-view-wrapper" style="display: none;">
+        <div class="compare-container">
+            <!-- Top Hero Panel: Cohesive Command Bar & Unified KPI Ribbon -->
+            <div class="compare-hero-panel">
+                <div class="compare-top-nav-bar">
+                    <div class="compare-badge-group">
+                        <span class="compare-method-badge">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                                <polyline points="2 17 12 22 22 17"></polyline>
+                                <polyline points="2 12 12 17 22 12"></polyline>
+                            </svg>
+                            PHƯƠNG PHÁP SO SÁNH THỊ TRƯỜNG (CMA &amp; GIS KNN)
+                        </span>
+                        <span class="compare-subject-badge" id="compareSubjectTag">BĐS Thẩm Định: Chưa nhập</span>
+                    </div>
+                    <button type="button" class="btn-back-home" onclick="switchMainTab('home')">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        <span>Quay lại Trang Chủ</span>
+                    </button>
+                </div>
+
+                <div class="compare-header-content">
+                    <h2 class="compare-main-title">Phân Tích &amp; Đối Chứng 5 Bất Động Sản Tương Đồng Lân Cận</h2>
+                    <p class="compare-main-desc">Các bất động sản được đối chiếu tự động theo bán kính không gian PostGIS KNN, phân tích tỷ lệ tương đồng đặc trưng và áp dụng hệ số điều chỉnh theo phương pháp so sánh thị trường (CMA) chuẩn hóa.</p>
+                </div>
+
+                <div class="compare-kpi-grid">
+                    <div class="compare-kpi-cell subject-highlight">
+                        <div class="kpi-label">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                            Đơn giá BĐS Thẩm định
+                        </div>
+                        <div class="kpi-value" id="kpiSubjectUnitPrice" style="color:var(--brand);">-- Tr/m²</div>
+                        <div class="kpi-sub" id="kpiSubjectTotalPrice">Tổng giá: --</div>
+                    </div>
+                    <div class="compare-kpi-cell">
+                        <div class="kpi-label">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            Đơn giá Bình quân 5 BĐS
+                        </div>
+                        <div class="kpi-value" id="kpiAvgUnitPrice">-- Tr/m²</div>
+                        <div class="kpi-sub">Bình quân đối chứng thị trường</div>
+                    </div>
+                    <div class="compare-kpi-cell">
+                        <div class="kpi-label">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M16 12l-4-4-4 4M12 16V8"></path></svg>
+                            Biên độ Đơn giá Khu vực
+                        </div>
+                        <div class="kpi-value" id="kpiMinMaxRange">-- ~ -- Tr/m²</div>
+                        <div class="kpi-sub">Khoảng dao động giao dịch</div>
+                    </div>
+                    <div class="compare-kpi-cell">
+                        <div class="kpi-label">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--green);"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+                            Bán kính quét đối chứng
+                        </div>
+                        <div class="kpi-value" id="kpiRadiusScan" style="color:var(--green);">~500m</div>
+                        <div class="kpi-sub" id="kpiCountMatches">5 tài sản xác thực</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Comparables Dashboard: Full-width clean table -->
+            <div class="compare-main-layout">
+                <div class="compare-col-comps">
+                    <div class="comps-deck-card">
+                        <div class="comps-deck-header">
+                            <div class="comps-deck-title">
+                                <span class="svg-icon" style="color:var(--brand);">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="3" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="3" width="7" height="7"></rect>
+                                        <rect x="14" y="14" width="7" height="7"></rect>
+                                        <rect x="3" y="14" width="7" height="7"></rect>
+                                    </svg>
+                                </span>
+                                <span id="compTitleText">5 BĐS Tương Đồng Lân Cận</span>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <span class="compare-subject-badge" id="compRadiusBadge">Bán kính ~500m</span>
+                                <span style="font-size:11px; color:var(--text-3);">Nhấn thẻ xem chi tiết CMA</span>
+                            </div>
+                        </div>
+
+                        <div id="compList" class="comps-list comps-cards-stack"></div>
+
+                        <div class="comps-deck-footer-note">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--brand); flex-shrink:0;">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                            <span>Dữ liệu 5 tài sản đối chứng được trích xuất từ các giao dịch &amp; niêm yết thực tế lân cận, chuẩn hóa theo Tiêu chuẩn Thẩm định giá Việt Nam.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer" id="contactFooter">
+        <div><strong>MHD Valuation</strong> — Hệ Thống Thẩm Định Giá Bất Động Sản Tự Động • Bản Quyền MHD Real Estate
+            Tech</div>
+        <div
+            style="margin-top:6px; color:var(--text-3); font-size:11px; display:flex; justify-content:center; align-items:center; gap:16px; flex-wrap:wrap;">
+            <span>📍 52 Trần Bình Trọng, Phường Bình Lợi Trung, TP. Hồ Chí Minh</span>
+            <span>📞 Hotline: <a href="tel:02835153516"
+                    style="color:var(--brand); text-decoration:none; font-weight:700;">028 3515 3516</a></span>
+            <span>✉️ Email: <a href="mailto:info@mhd.com.vn"
+                    style="color:var(--brand); text-decoration:none; font-weight:700;">info@mhd.com.vn</a></span>
+        </div>
+    </footer>
+
+    <!-- ════════ PROGRESSIVE AI VALUATION MODAL (TINIX BENCHMARK STYLE) ════════ -->
+    <div id="aiProgressModal" class="ai-progress-modal" style="display: none;">
+        <div class="ai-progress-card">
+            <div class="ai-progress-header">
+                <div class="ai-progress-spinner">
+                    <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
+                        <circle cx="22" cy="22" r="18" stroke="var(--border-subtle)" stroke-width="4" />
+                        <circle cx="22" cy="22" r="18" stroke="var(--brand)" stroke-width="4" stroke-dasharray="113"
+                            stroke-dashoffset="60" stroke-linecap="round">
+                            <animateTransform attributeName="transform" type="rotate" from="0 22 22" to="360 22 22"
+                                dur="1.2s" repeatCount="indefinite" />
+                        </circle>
+                    </svg>
+                </div>
+                <div class="ai-progress-title">Hệ Thống Đang Xử Lý Thẩm Định</div>
+                <div class="ai-progress-desc">Mô hình AI CatBoost v2.4 & GIS PostGIS đang phân tích không gian</div>
+            </div>
+
+            <div class="ai-steps-list">
+                <div class="ai-step-item active" id="aiStep1">
+                    <div class="ai-step-icon">1</div>
+                    <div class="ai-step-text">
+                        <div class="ai-step-name">Xác thực vị trí hành chính & trích xuất GIS</div>
+                        <div class="ai-step-status">Đang xử lý tọa độ OpenStreetMap...</div>
+                    </div>
+                </div>
+                <div class="ai-step-item" id="aiStep2">
+                    <div class="ai-step-icon">2</div>
+                    <div class="ai-step-text">
+                        <div class="ai-step-name">Quét không gian KNN 5 BĐS đối chứng lân cận</div>
+                        <div class="ai-step-status">Chờ trích xuất...</div>
+                    </div>
+                </div>
+                <div class="ai-step-item" id="aiStep3">
+                    <div class="ai-step-icon">3</div>
+                    <div class="ai-step-text">
+                        <div class="ai-step-name">Chuẩn hóa hệ số điều chỉnh so sánh thị trường (CMA)</div>
+                        <div class="ai-step-status">Chờ tính toán...</div>
+                    </div>
+                </div>
+                <div class="ai-step-item" id="aiStep4">
+                    <div class="ai-step-icon">4</div>
+                    <div class="ai-step-text">
+                        <div class="ai-step-name">Kích hoạt mô hình CatBoost AVM dự phóng</div>
+                        <div class="ai-step-status">Chờ dự phóng...</div>
+                    </div>
+                </div>
+                <div class="ai-step-item" id="aiStep5">
+                    <div class="ai-step-icon">5</div>
+                    <div class="ai-step-text">
+                        <div class="ai-step-name">Xuất chứng thư & biểu đồ phân tích TreeSHAP</div>
+                        <div class="ai-step-status">Chờ kết xuất...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ════════ JAVASCRIPT ════════ -->
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
