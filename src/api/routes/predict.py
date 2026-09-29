@@ -142,11 +142,20 @@ async def predict_property_price(
         model_version=valuation_res["model_version"]
     )
     
+    # 5. Tính toán xu hướng giá 12 tháng & dự báo AI
+    price_trend = spatial_service.get_price_trend_12m(
+        district_name=request_data.district_name,
+        province_name=request_data.province_name,
+        property_type=request_data.property_type,
+        current_price_m2=valuation_res.get("price_per_m2", 0)
+    )
+
     return {
         "status": "success",
         "valuation": valuation_res,
         "comparable_properties": comparables,
-        "market_stats": market_stats
+        "market_stats": market_stats,
+        "price_trend": price_trend
     }
 
 @router.get("/comparables")
@@ -178,6 +187,49 @@ async def get_comparables(
     return {
         "status": "success",
         "comparable_properties": comps
+    }
+
+@router.get("/spatial-heatmap")
+async def get_spatial_heatmap(
+    longitude: float,
+    latitude: float,
+    radius_meters: int = 4000,
+    limit: int = 350
+):
+    """Lấy danh sách các điểm bất động sản thực tế kèm đơn giá để vẽ Bản đồ nhiệt (Price Heatmap)"""
+    try:
+        points = spatial_service.get_heatmap_points(
+            longitude=longitude,
+            latitude=latitude,
+            radius_meters=radius_meters,
+            limit=limit
+        )
+    except Exception as e:
+        print(f"[CẢNH BÁO] Lỗi truy vấn heatmap: {e}")
+        points = []
+    return {
+        "status": "success",
+        "total_points": len(points),
+        "heatmap_points": points
+    }
+
+@router.get("/price-trend")
+async def get_price_trend(
+    district_name: Optional[str] = None,
+    province_name: Optional[str] = None,
+    property_type: str = "Nhà riêng",
+    current_price_m2: float = 0.0
+):
+    """Xu hướng giá 12 tháng qua và dự báo 3-6 tháng tới"""
+    trend = spatial_service.get_price_trend_12m(
+        district_name=district_name or "",
+        province_name=province_name or "",
+        property_type=property_type,
+        current_price_m2=current_price_m2
+    )
+    return {
+        "status": "success",
+        "price_trend": trend
     }
 
 @router.get("/geocode")

@@ -20,6 +20,8 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="/src/styles/main.css">
 </head>
 <body>
@@ -788,17 +790,47 @@
                         </div>
                     </div>
 
-                    <!-- Floating Search Area Button over Map -->
-                    <button type="button" id="btnSearchThisArea" class="map-floating-search-btn"
-                        onclick="searchCurrentViewportArea()" style="display:none;"
-                        title="Quét các tiện ích OSM xung quanh khu vực bạn đang xem">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <span id="btnSearchAreaText">Quét tiện ích tại khu vực này</span>
-                    </button>
+                    <!-- Floating Map Action Buttons & Heatmap Legend -->
+                    <div class="map-floating-actions-bar">
+                        <button type="button" id="btnToggleHeatmap" class="map-floating-heat-btn"
+                            onclick="togglePriceHeatmap()"
+                            title="Bật/Tắt Bản đồ nhiệt mật độ đơn giá đất khu vực (Heatmap)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <circle cx="12" cy="12" r="4"></circle>
+                                <line x1="4.93" y1="4.93" x2="9.17" y2="9.17"></line>
+                                <line x1="14.83" y1="14.83" x2="19.07" y2="19.07"></line>
+                            </svg>
+                            <span id="btnHeatmapText">Bản đồ nhiệt giá</span>
+                            <span class="heatmap-live-chip">MỚI</span>
+                        </button>
+
+                        <button type="button" id="btnSearchThisArea" class="map-floating-search-btn"
+                            onclick="searchCurrentViewportArea()" style="display:none;"
+                            title="Quét các tiện ích OSM xung quanh khu vực bạn đang xem">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <span id="btnSearchAreaText">Quét tiện ích tại khu vực này</span>
+                        </button>
+                    </div>
+
+                    <!-- Floating Heatmap Legend on Bottom Right of Map -->
+                    <div id="heatmapLegend" class="map-floating-heatmap-legend" style="display:none;">
+                        <div class="legend-header">
+                            <span class="legend-dot-pulse"></span>
+                            <span class="legend-title-text">Biên độ giá m² khu vực</span>
+                        </div>
+                        <div class="legend-gradient-bar"></div>
+                        <div class="legend-scale-labels">
+                            <span>&lt;60Tr</span>
+                            <span>60-100Tr</span>
+                            <span>100-160Tr</span>
+                            <span>&gt;160Tr/m²</span>
+                        </div>
+                    </div>
                     <div id="map" style="width:100%; height:520px; border-radius:0 0 12px 12px;"></div>
                 </div>
             </div>
@@ -1083,6 +1115,59 @@
                             </div>
                             <div class="amenities-grid" id="amenitiesGridList">
                                 <!-- Dynamic amenity items rendered by JS -->
+                            </div>
+                        </div>
+
+                        <!-- ── 5. 12-MONTH HISTORICAL PRICE TREND & AI FORECAST (DỮ LIỆU THẬT) ── -->
+                        <div class="trend-card-section" id="priceTrendCard" style="display:none;">
+                            <div class="trend-card-header">
+                                <div class="trend-title-group">
+                                    <span class="trend-icon-badge">
+                                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                            <polyline points="17 6 23 6 23 12"></polyline>
+                                        </svg>
+                                    </span>
+                                    <div>
+                                        <div class="trend-title-text">Biến Động Giá 12 Tháng &amp; Dự Báo AI</div>
+                                        <div class="trend-subtitle" id="trendSubtitle">Chuỗi thời gian giao dịch thực tế &amp; mô hình hồi quy đa thức</div>
+                                    </div>
+                                </div>
+                                <div class="trend-tag-badge">
+                                    <span class="cert-pulse-dot" style="background:#10b981;"></span>
+                                    <span id="trendSampleCountBadge">34.955 BĐS thật</span>
+                                </div>
+                            </div>
+
+                            <!-- 3 Real Statistical KPI Pills -->
+                            <div class="trend-metrics-grid">
+                                <div class="trend-metric-pill">
+                                    <span class="trend-metric-label">Tăng trưởng 1 năm (YoY)</span>
+                                    <span class="trend-metric-val" id="trendYoyVal">--%</span>
+                                </div>
+                                <div class="trend-metric-pill">
+                                    <span class="trend-metric-label">Biến động Quý gần nhất (QoQ)</span>
+                                    <span class="trend-metric-val" id="trendQoqVal">--%</span>
+                                </div>
+                                <div class="trend-metric-pill">
+                                    <span class="trend-metric-label">Dự báo 3-6 tháng tới (AI)</span>
+                                    <span class="trend-metric-val forecast" id="trendForecastVal">--%</span>
+                                </div>
+                            </div>
+
+                            <!-- Interactive Chart Canvas -->
+                            <div class="trend-chart-wrapper">
+                                <canvas id="priceTrendCanvas" height="200"></canvas>
+                            </div>
+
+                            <!-- Real Data Insight Footer -->
+                            <div class="trend-insight-box">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#E05400" stroke-width="2" style="flex-shrink:0;">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <line x1="12" y1="16" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                                </svg>
+                                <span id="trendInsightText">Dữ liệu được tổng hợp trực tiếp từ các giao dịch bất động sản thật trên thị trường.</span>
                             </div>
                         </div>
 

@@ -3535,3 +3535,262 @@
             background: none !important;
             border: none !important;
         }
+
+        /* ════════ MAP FLOATING CONTROLS & HEATMAP BAR ════════ */
+        .map-floating-actions-bar {
+            position: absolute;
+            top: 155px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .map-floating-heat-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(224, 84, 0, 0.65);
+            color: #ffffff;
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 14px rgba(224, 84, 0, 0.35);
+            padding: 7px 16px;
+            border-radius: var(--r-pill);
+            font-size: 11.5px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .map-floating-heat-btn:hover {
+            background: var(--brand);
+            border-color: var(--brand-light);
+            box-shadow: 0 6px 20px var(--brand-glow);
+            transform: translateY(-2px);
+        }
+
+        .map-floating-heat-btn.active {
+            background: #e05400;
+            color: #ffffff;
+            border-color: #ff8c42;
+            box-shadow: 0 0 20px rgba(224, 84, 0, 0.6);
+        }
+
+        .heatmap-live-chip {
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 900;
+            padding: 1px 6px;
+            border-radius: 999px;
+            letter-spacing: 0.5px;
+            animation: pulse-dot 1.8s infinite;
+        }
+
+        /* Floating Heatmap Legend */
+        .map-floating-heatmap-legend {
+            position: absolute;
+            bottom: 22px;
+            right: 18px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 10px 14px;
+            min-width: 220px;
+            pointer-events: auto;
+        }
+
+        .legend-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 7px;
+        }
+
+        .legend-dot-pulse {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulse-dot 1.8s infinite;
+        }
+
+        .legend-title-text {
+            font-size: 11px;
+            font-weight: 800;
+            color: #f1f5f9;
+            letter-spacing: 0.2px;
+        }
+
+        .legend-gradient-bar {
+            height: 9px;
+            width: 100%;
+            border-radius: 5px;
+            background: linear-gradient(to right, #06b6d4, #10b981, #f59e0b, #ef4444);
+            margin-bottom: 6px;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.4);
+        }
+
+        .legend-scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #94a3b8;
+        }
+
+        /* ════════ 12-MONTH HISTORICAL PRICE TREND CARD ════════ */
+        .trend-card-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--r-md);
+            padding: 20px;
+            margin-top: 18px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .trend-card-section:hover {
+            border-color: rgba(224, 84, 0, 0.4);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .trend-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .trend-title-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .trend-icon-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: rgba(224, 84, 0, 0.12);
+            color: var(--brand);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            border: 1px solid rgba(224, 84, 0, 0.25);
+        }
+
+        .trend-title-text {
+            font-family: var(--font-heading);
+            font-size: 14.5px;
+            font-weight: 800;
+            color: var(--text-1);
+            letter-spacing: -0.2px;
+        }
+
+        .trend-subtitle {
+            font-size: 11px;
+            color: var(--text-3);
+            margin-top: 2px;
+        }
+
+        .trend-tag-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: var(--r-pill);
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            color: #059669;
+            font-size: 11px;
+            font-weight: 800;
+        }
+
+        /* 3 KPI Metrics Grid */
+        .trend-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .trend-metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .trend-metric-pill {
+            background: var(--bg-card-sub);
+            border: 1px solid var(--border);
+            border-radius: var(--r-sm);
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .trend-metric-pill:hover {
+            border-color: rgba(224, 84, 0, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .trend-metric-label {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: var(--text-3);
+            white-space: nowrap;
+        }
+
+        .trend-metric-val {
+            font-family: var(--font-mono);
+            font-size: 17px;
+            font-weight: 800;
+            color: #10b981;
+        }
+
+        .trend-metric-val.negative {
+            color: #ef4444;
+        }
+
+        .trend-metric-val.forecast {
+            color: var(--brand);
+        }
+
+        /* Chart Canvas wrapper */
+        .trend-chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 200px;
+            margin-bottom: 12px;
+        }
+
+        /* Trend Insight text box */
+        .trend-insight-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            border-radius: var(--r-sm);
+            background: rgba(224, 84, 0, 0.06);
+            border: 1px dashed rgba(224, 84, 0, 0.25);
+            font-size: 11.5px;
+            color: var(--text-2);
+            line-height: 1.5;
+        }

@@ -25,6 +25,24 @@ export async function fetchComparables(params) {
     return await res.json();
 }
 
+export async function fetchSpatialHeatmap(longitude, latitude, radius_meters = 4000) {
+    const res = await fetch(`${API_BASE}/spatial-heatmap?longitude=${longitude}&latitude=${latitude}&radius_meters=${radius_meters}`);
+    if (!res.ok) return { status: 'error', heatmap_points: [] };
+    return await res.json();
+}
+
+export async function fetchPriceTrend(district, province, propertyType = 'Nhà riêng', currentPriceM2 = 0) {
+    const params = new URLSearchParams({
+        district_name: district || '',
+        province_name: province || '',
+        property_type: propertyType,
+        current_price_m2: currentPriceM2
+    }).toString();
+    const res = await fetch(`${API_BASE}/price-trend?${params}`);
+    if (!res.ok) return null;
+    return await res.json();
+}
+
 export async function geocodeAddress(province, district, ward = '', street = '') {
     const params = new URLSearchParams({
         province: province || '',

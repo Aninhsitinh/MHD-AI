@@ -103,6 +103,83 @@ let currentLat = 10.775659;
         const radiusCircle = L.circle([currentLat, currentLng], { color: '#E05400', fillColor: '#E05400', fillOpacity: 0.08, weight: 1.5, radius: 500 }).addTo(map);
         const compLayerGroup = L.layerGroup().addTo(map);
 
+        // ── BẢN ĐỒ NHIỆT GIÁ ĐẤT (REAL PRICE HEATMAP LAYER) ──
+        let heatmapLayer = null;
+        let isHeatmapActive = false;
+        let currentHeatmapPoints = [];
+
+        async function loadHeatmapData(lat, lng) {
+            try {
+                const res = await fetch(`/api/v1/spatial-heatmap?latitude=${lat}&longitude=${lng}&radius_meters=4000&limit=350`);
+                if (!res.ok) return [];
+                const data = await res.json();
+                return data.heatmap_points || [];
+            } catch (e) {
+                console.warn("Lỗi tải dữ liệu heatmap:", e);
+                return [];
+            }
+        }
+
+        async function renderHeatmapLayer(lat, lng) {
+            if (!window.L || typeof L.heatLayer !== 'function') {
+                console.warn("L.heatLayer chưa sẵn sàng trên window.L");
+                return;
+            }
+            const points = await loadHeatmapData(lat, lng);
+            currentHeatmapPoints = points;
+            if (heatmapLayer && map.hasLayer(heatmapLayer)) {
+                map.removeLayer(heatmapLayer);
+                heatmapLayer = null;
+            }
+            if (points.length === 0) return;
+
+            const heatData = points.map(p => [p.lat, p.lng, p.intensity || 0.5]);
+            heatmapLayer = L.heatLayer(heatData, {
+                radius: 28,
+                blur: 20,
+                maxZoom: 17,
+                max: 1.0,
+                gradient: {
+                    0.15: '#06b6d4',
+                    0.40: '#10b981',
+                    0.70: '#f59e0b',
+                    1.00: '#ef4444'
+                }
+            });
+            if (isHeatmapActive) {
+                heatmapLayer.addTo(map);
+            }
+        }
+
+        async function togglePriceHeatmap() {
+            const btn = document.getElementById('btnToggleHeatmap');
+            const legend = document.getElementById('heatmapLegend');
+            const text = document.getElementById('btnHeatmapText');
+
+            isHeatmapActive = !isHeatmapActive;
+
+            if (isHeatmapActive) {
+                if (btn) btn.classList.add('active');
+                if (text) text.textContent = 'Tắt nhiệt giá';
+                if (legend) legend.style.display = 'block';
+
+                if (!heatmapLayer || currentHeatmapPoints.length === 0) {
+                    await renderHeatmapLayer(currentLat, currentLng);
+                } else if (!map.hasLayer(heatmapLayer)) {
+                    heatmapLayer.addTo(map);
+                }
+                showToast('Đã kích hoạt Bản đồ nhiệt mật độ giá đất khu vực');
+            } else {
+                if (btn) btn.classList.remove('active');
+                if (text) text.textContent = 'Bản đồ nhiệt giá';
+                if (legend) legend.style.display = 'none';
+                if (heatmapLayer && map.hasLayer(heatmapLayer)) {
+                    map.removeLayer(heatmapLayer);
+                }
+            }
+        }
+        window.togglePriceHeatmap = togglePriceHeatmap;
+
         // ── POI VECTOR SVG ICONS & LAYER MANAGEMENT (9 COMPREHENSIVE CATEGORIES, STRICTLY NO EMOJI) ──
         const poiLayerGroup = L.layerGroup().addTo(map);
         let currentPois = [];
@@ -399,6 +476,9 @@ let currentLat = 10.775659;
             if (searchBtn) searchBtn.style.display = 'none';
             fetchNearbyPois(lat, lng, name);
             showToast(`Đang quét tiện ích: ${name}`);
+            if (isHeatmapActive) {
+                renderHeatmapLayer(lat, lng);
+            }
         }
 
         async function searchCurrentViewportArea() {
@@ -797,6 +877,10 @@ let currentLat = 10.775659;
             currentLng = lng;
             radiusCircle.setLatLng([lat, lng]);
             document.getElementById('coordsBadge').innerText = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
+
+            if (isHeatmapActive) {
+                renderHeatmapLayer(lat, lng);
+            }
 
             const searchBtn = document.getElementById('btnSearchThisArea');
             if (searchBtn) searchBtn.style.display = 'none';
@@ -1519,7 +1603,7 @@ let currentLat = 10.775659;
                 if (data.status === 'success') {
                     document.getElementById('valuationResultWrapper').style.display = 'block';
                     document.getElementById('resultPlaceholder').style.display = 'none';
-                    renderValuationResult(data.valuation);
+                    renderValuationResult(data.valuation, data.price_trend);
                     renderComparables(data.comparable_properties);
                     showToast('Đã hoàn thành thẩm định giá tài sản');
                     document.getElementById('valuationResultWrapper').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1555,9 +1639,9 @@ let currentLat = 10.775659;
         // ════════ MAIN TAB SWITCHER (TRANG CHỦ / SO SÁNH GIÁ) ════════
         let activeMainTab = 'home';
         let latestValuation = null;
+        let priceTrendChartInstance = null;
 
-
-        function renderValuationResult(v) {
+        function renderValuationResult(v, priceTrend = null) {
             latestValuation = v;
             const priceEl = document.getElementById('predictedPrice');
             const rangeEl = document.getElementById('priceRange');
@@ -1667,7 +1751,185 @@ let currentLat = 10.775659;
             // Show Bridge Card to Compare View
             const bridgeCard = document.getElementById('bridgeCompareCard');
             if (bridgeCard) bridgeCard.style.display = 'flex';
+
+            // ── 5. Render 12-Month Real Historical Price Trend & AI Forecast Chart ──
+            if (priceTrend) {
+                renderPriceTrendChart(priceTrend);
+            } else {
+                fetchPriceTrendData(v);
+            }
         }
+
+        async function fetchPriceTrendData(v) {
+            try {
+                const dist = document.getElementById('district_name').value.trim();
+                const prov = document.getElementById('province_name').value.trim();
+                const ptype = document.querySelector('input[name="property_type"]:checked')?.value || 'Nhà riêng';
+                const currentM2 = v ? (v.price_per_m2 || 0) : 0;
+                const res = await fetch(`/api/v1/price-trend?district_name=${encodeURIComponent(dist)}&province_name=${encodeURIComponent(prov)}&property_type=${encodeURIComponent(ptype)}&current_price_m2=${currentM2}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.price_trend) {
+                    renderPriceTrendChart(data.price_trend);
+                }
+            } catch (e) {
+                console.warn("Lỗi tải xu hướng giá:", e);
+            }
+        }
+
+        function renderPriceTrendChart(trend) {
+            if (!trend || !trend.months || trend.months.length === 0) return;
+
+            const card = document.getElementById('priceTrendCard');
+            if (card) card.style.display = 'block';
+
+            // 1. Update Statistical KPI Badges & Texts
+            const yoyEl = document.getElementById('trendYoyVal');
+            const qoqEl = document.getElementById('trendQoqVal');
+            const forecastEl = document.getElementById('trendForecastVal');
+            const countBadge = document.getElementById('trendSampleCountBadge');
+            const subTitle = document.getElementById('trendSubtitle');
+            const insightText = document.getElementById('trendInsightText');
+
+            const yoy = trend.yearly_growth_percent;
+            const qoq = trend.quarterly_growth_percent;
+            const fc = trend.forecast_growth_percent;
+
+            if (yoyEl) {
+                yoyEl.textContent = (yoy >= 0 ? '+' : '') + yoy + '%';
+                yoyEl.className = 'trend-metric-val ' + (yoy < 0 ? 'negative' : '');
+            }
+            if (qoqEl) {
+                qoqEl.textContent = (qoq >= 0 ? '+' : '') + qoq + '%';
+                qoqEl.className = 'trend-metric-val ' + (qoq < 0 ? 'negative' : '');
+            }
+            if (forecastEl) {
+                forecastEl.textContent = (fc >= 0 ? '+' : '') + fc + '%';
+            }
+            if (countBadge && trend.total_samples) {
+                countBadge.textContent = `${trend.total_samples.toLocaleString()} BĐS thật`;
+            }
+            if (subTitle) {
+                subTitle.textContent = `Thống kê chuỗi thời gian thực tế tại ${trend.district_name || 'khu vực'}`;
+            }
+            if (insightText && trend.forecast_comment) {
+                insightText.textContent = trend.forecast_comment;
+            }
+
+            // 2. Render Chart using window.Chart
+            const canvas = document.getElementById('priceTrendCanvas');
+            if (!canvas || typeof window.Chart === 'undefined') {
+                console.warn("Canvas hoặc Chart.js chưa sẵn sàng");
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            if (priceTrendChartInstance) {
+                priceTrendChartInstance.destroy();
+                priceTrendChartInstance = null;
+            }
+
+            // Gradient background for District line
+            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+            gradient.addColorStop(0, 'rgba(224, 84, 0, 0.35)');
+            gradient.addColorStop(1, 'rgba(224, 84, 0, 0.0)');
+
+            const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+
+            priceTrendChartInstance = new window.Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: trend.months,
+                    datasets: [
+                        {
+                            label: `Đơn giá ${trend.district_name || 'Quận'} (Tr/m²)`,
+                            data: trend.district_series,
+                            borderColor: '#E05400',
+                            backgroundColor: gradient,
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.35,
+                            pointBackgroundColor: '#E05400',
+                            pointBorderColor: '#ffffff',
+                            pointBorderWidth: 1.5,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Trung bình TP (Tr/m²)',
+                            data: trend.city_series,
+                            borderColor: '#3B82F6',
+                            borderDash: [5, 4],
+                            borderWidth: 1.8,
+                            fill: false,
+                            tension: 0.35,
+                            pointBackgroundColor: '#3B82F6',
+                            pointRadius: 2,
+                            pointHoverRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: textColor,
+                                font: { size: 11, family: "'Inter', sans-serif", weight: '600' },
+                                boxWidth: 12,
+                                boxHeight: 12,
+                                padding: 12
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                            titleColor: '#f8fafc',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(224, 84, 0, 0.4)',
+                            borderWidth: 1,
+                            padding: 10,
+                            boxPadding: 4,
+                            usePointStyle: true,
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.parsed.y;
+                                    let label = context.dataset.label || '';
+                                    const idx = context.dataIndex;
+                                    let extra = '';
+                                    if (context.datasetIndex === 0 && trend.sample_counts && trend.sample_counts[idx]) {
+                                        extra = ` (${trend.sample_counts[idx]} BĐS thật)`;
+                                    }
+                                    return ` ${label}: ${val} Tr/m²${extra}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: gridColor },
+                            ticks: { color: textColor, font: { size: 10.5, family: "'Inter', sans-serif" } }
+                        },
+                        y: {
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: textColor,
+                                font: { size: 10.5, family: "'Inter', sans-serif" },
+                                callback: function(v) { return v + ' Tr'; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        window.renderPriceTrendChart = renderPriceTrendChart;
 
         // Toggle Expandable SHAP Drawer
         function toggleShapDetails() {

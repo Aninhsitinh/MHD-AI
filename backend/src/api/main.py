@@ -2,7 +2,7 @@
 ==============================================================================
 MHD REAL ESTATE TECH • HỆ THỐNG THẨM ĐỊNH GIÁ BẤT ĐỘNG SẢN AI (MHD AVM)
 FASTAPI BACKEND SERVICE (LOW LATENCY < 100MS)
-CẬP NHẬT: GIỚI HẠN BÁN KÍNH ĐỐI CHỨNG KHÔNG VƯỢT QUÁ 2KM
+CẬP NHẬT: GIỚI HẠN BÁN KÍNH ĐỐI CHỨNG KHÔNG VƯỢT QUÁ 2KM & SPATIAL HEATMAP / TREND APIS
 ==============================================================================
 """
 
