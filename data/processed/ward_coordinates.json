@@ -6278,5 +6278,331 @@
     "province": "Khánh Hòa",
     "district": "Cam Ranh",
     "ward": "Cam Nghĩa"
-  }
+  },
+  "Khánh Hòa_Cam Ranh_Cam Phúc Bắc": {
+    "lat": 11.9670307,
+    "lng": 109.1927525,
+    "province": "Khánh Hòa",
+    "district": "Cam Ranh",
+    "ward": "Cam Phúc Bắc"
+  },
+  "Khánh Hòa_Diên Khánh_Diên An": {
+    "lat": 12.2563099,
+    "lng": 109.0939541,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên An"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Hòa": {
+    "lat": 12.2535021,
+    "lng": 109.0978389,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Hòa"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Khánh": {
+    "lat": 12.2535021,
+    "lng": 109.0978389,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Khánh"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Lạc": {
+    "lat": 12.2535021,
+    "lng": 109.0978389,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Lạc"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Phú": {
+    "lat": 12.2753744,
+    "lng": 109.1205198,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Phú"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Phước": {
+    "lat": 12.2724714,
+    "lng": 109.0955022,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Phước"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Sơn": {
+    "lat": 12.2693456,
+    "lng": 109.10019,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Sơn"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Thạnh": {
+    "lat": 12.2575085,
+    "lng": 109.0998074,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Thạnh"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Toàn": {
+    "lat": 12.2479072,
+    "lng": 109.0990555,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Toàn"
+  },
+  "Khánh Hòa_Diên Khánh_Diên Điền": {
+    "lat": 12.2381122,
+    "lng": 109.0950557,
+    "province": "Khánh Hòa",
+    "district": "Diên Khánh",
+    "ward": "Diên Điền"
+  },
+  "Khánh Hòa_Diên Khánh_Suối Hiệp": null,
+  "Khánh Hòa_Diên Khánh_Suối Tiên": null,
+  "Khánh Hòa_Khánh Vĩnh_Sông Cầu": {
+    "lat": 12.2184401,
+    "lng": 108.9224366,
+    "province": "Khánh Hòa",
+    "district": "Khánh Vĩnh",
+    "ward": "Sông Cầu"
+  },
+  "Khánh Hòa_Nha Trang_Lộc Thọ": {
+    "lat": 12.2441173,
+    "lng": 109.192515,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Lộc Thọ"
+  },
+  "Khánh Hòa_Nha Trang_Ngọc Hiệp": {
+    "lat": 12.2644477,
+    "lng": 109.1732925,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Ngọc Hiệp"
+  },
+  "Khánh Hòa_Nha Trang_Phương Sài": {
+    "lat": 12.2537024,
+    "lng": 109.1818496,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Phương Sài"
+  },
+  "Khánh Hòa_Nha Trang_Phước Hòa": {
+    "lat": 12.2366373,
+    "lng": 109.1852254,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Phước Hòa"
+  },
+  "Khánh Hòa_Nha Trang_Phước Hải": {
+    "lat": 12.2414109,
+    "lng": 109.1763386,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Phước Hải"
+  },
+  "Khánh Hòa_Nha Trang_Phước Long": {
+    "lat": 12.2096709,
+    "lng": 109.1912487,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Phước Long"
+  },
+  "Khánh Hòa_Nha Trang_Phước Đồng": {
+    "lat": 12.2406506,
+    "lng": 109.1811229,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Phước Đồng"
+  },
+  "Khánh Hòa_Nha Trang_Tân Tiến": {
+    "lat": 12.2518861,
+    "lng": 109.187874,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Tân Tiến"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Hiệp": {
+    "lat": 12.2552447,
+    "lng": 109.1595137,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Hiệp"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Hòa": {
+    "lat": 12.2244626,
+    "lng": 109.1753345,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Hòa"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Hải": {
+    "lat": 12.2378755,
+    "lng": 109.1788273,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Hải"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Lương": {
+    "lat": 12.2164756,
+    "lng": 109.1929727,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Lương"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Nguyên": {
+    "lat": 12.2751875,
+    "lng": 109.1471923,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Nguyên"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Ngọc": {
+    "lat": 12.2866735,
+    "lng": 109.1838996,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Ngọc"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Phương": {
+    "lat": 12.2744421,
+    "lng": 109.1472897,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Phương"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Phước": {
+    "lat": 12.2703854,
+    "lng": 109.1923405,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Phước"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Thái": {
+    "lat": 12.2347389,
+    "lng": 109.1594567,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Thái"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Thạnh": {
+    "lat": 12.2496595,
+    "lng": 109.1823727,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Thạnh"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Thọ": {
+    "lat": 12.2570901,
+    "lng": 109.130543,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Thọ"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Trung": {
+    "lat": 12.2534758,
+    "lng": 109.1697243,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Trung"
+  },
+  "Khánh Hòa_Nha Trang_Vĩnh Trường": {
+    "lat": 12.2036905,
+    "lng": 109.1782959,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vĩnh Trường"
+  },
+  "Khánh Hòa_Nha Trang_Vạn Thạnh": {
+    "lat": 12.2518503,
+    "lng": 109.1893479,
+    "province": "Khánh Hòa",
+    "district": "Nha Trang",
+    "ward": "Vạn Thạnh"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh An": {
+    "lat": 12.5513479,
+    "lng": 109.164978,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh An"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh Bình": {
+    "lat": 12.5339297,
+    "lng": 109.1824154,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh Bình"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh Giang": null,
+  "Khánh Hòa_Ninh Hòa_Ninh Hiệp": {
+    "lat": 12.4842143,
+    "lng": 109.1260568,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh Hiệp"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh Hải": {
+    "lat": 11.6165456,
+    "lng": 109.0626156,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh Hải"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh Quang": {
+    "lat": 12.4970465,
+    "lng": 109.1325313,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh Quang"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh Thọ": {
+    "lat": 12.5339297,
+    "lng": 109.1824154,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh Thọ"
+  },
+  "Khánh Hòa_Ninh Hòa_Ninh Thủy": {
+    "lat": 16.4725895,
+    "lng": 107.5688369,
+    "province": "Khánh Hòa",
+    "district": "Ninh Hòa",
+    "ward": "Ninh Thủy"
+  },
+  "Khánh Hòa_Vạn Ninh_Vạn Giã": {
+    "lat": 12.6996814,
+    "lng": 109.2244852,
+    "province": "Khánh Hòa",
+    "district": "Vạn Ninh",
+    "ward": "Vạn Giã"
+  },
+  "Khánh Hòa_Vạn Ninh_Vạn Khánh": {
+    "lat": 12.6779063,
+    "lng": 109.2142991,
+    "province": "Khánh Hòa",
+    "district": "Vạn Ninh",
+    "ward": "Vạn Khánh"
+  },
+  "Khánh Hòa_Vạn Ninh_Vạn Lương": {
+    "lat": 12.6807651,
+    "lng": 109.2130074,
+    "province": "Khánh Hòa",
+    "district": "Vạn Ninh",
+    "ward": "Vạn Lương"
+  },
+  "Khánh Hòa_Vạn Ninh_Vạn Thắng": {
+    "lat": 12.7034594,
+    "lng": 109.2277728,
+    "province": "Khánh Hòa",
+    "district": "Vạn Ninh",
+    "ward": "Vạn Thắng"
+  },
+  "Khánh Hòa_Vạn Ninh_Vạn Thọ": {
+    "lat": 12.6997797,
+    "lng": 109.226297,
+    "province": "Khánh Hòa",
+    "district": "Vạn Ninh",
+    "ward": "Vạn Thọ"
+  },
+  "Khánh Hòa_Vạn Ninh_Đại Lãnh": null
 }
