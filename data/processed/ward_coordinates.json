@@ -5312,5 +5312,337 @@
     "province": "Hồ Chí Minh",
     "district": "Quận 11",
     "ward": "14"
+  },
+  "Hồ Chí Minh_Quận 11_15": {
+    "lat": 10.7818011,
+    "lng": 106.6521361,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 11",
+    "ward": "15"
+  },
+  "Hồ Chí Minh_Quận 11_16": {
+    "lat": 10.7818011,
+    "lng": 106.6521361,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 11",
+    "ward": "16"
+  },
+  "Hồ Chí Minh_Quận 11_3": {
+    "lat": 10.7681426,
+    "lng": 106.6363015,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 11",
+    "ward": "3"
+  },
+  "Hồ Chí Minh_Quận 11_5": {
+    "lat": 10.7818011,
+    "lng": 106.6521361,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 11",
+    "ward": "5"
+  },
+  "Hồ Chí Minh_Quận 11_7": {
+    "lat": 10.7901958,
+    "lng": 106.688399,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 11",
+    "ward": "7"
+  },
+  "Hồ Chí Minh_Quận 11_8": {
+    "lat": 10.8564039,
+    "lng": 106.6237648,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 11",
+    "ward": "8"
+  },
+  "Hồ Chí Minh_Quận 12_An Phú Đông": {
+    "lat": 10.8570791,
+    "lng": 106.6208792,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "An Phú Đông"
+  },
+  "Hồ Chí Minh_Quận 12_Hiệp Thành": {
+    "lat": 10.8797978,
+    "lng": 106.6480111,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Hiệp Thành"
+  },
+  "Hồ Chí Minh_Quận 12_Thạnh Lộc": null,
+  "Hồ Chí Minh_Quận 12_Thạnh Xuân": null,
+  "Hồ Chí Minh_Quận 12_Thới An": {
+    "lat": 10.8706159,
+    "lng": 106.6501697,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Thới An"
+  },
+  "Hồ Chí Minh_Quận 12_Trung Mỹ Tây": {
+    "lat": 10.8556114,
+    "lng": 106.6256344,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Trung Mỹ Tây"
+  },
+  "Hồ Chí Minh_Quận 12_Tân Chánh Hiệp": {
+    "lat": 10.8556272,
+    "lng": 106.6238217,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Tân Chánh Hiệp"
+  },
+  "Hồ Chí Minh_Quận 12_Tân Hưng Thuận": {
+    "lat": 10.8252269,
+    "lng": 106.6247797,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Tân Hưng Thuận"
+  },
+  "Hồ Chí Minh_Quận 12_Tân Thới Hiệp": {
+    "lat": 10.8706159,
+    "lng": 106.6501697,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Tân Thới Hiệp"
+  },
+  "Hồ Chí Minh_Quận 12_Tân Thới Nhất": {
+    "lat": 10.8252269,
+    "lng": 106.6247797,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Tân Thới Nhất"
+  },
+  "Hồ Chí Minh_Quận 12_Đông Hưng Thuận": {
+    "lat": 10.8430984,
+    "lng": 106.625859,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 12",
+    "ward": "Đông Hưng Thuận"
+  },
+  "Hồ Chí Minh_Quận 3_1": {
+    "lat": 10.7933512,
+    "lng": 106.6832206,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "1"
+  },
+  "Hồ Chí Minh_Quận 3_11": {
+    "lat": 10.7151044,
+    "lng": 106.7291321,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "11"
+  },
+  "Hồ Chí Minh_Quận 3_12": {
+    "lat": 10.7766343,
+    "lng": 106.69135,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "12"
+  },
+  "Hồ Chí Minh_Quận 3_14": {
+    "lat": 10.7766983,
+    "lng": 106.6912637,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "14"
+  },
+  "Hồ Chí Minh_Quận 3_2": {
+    "lat": 10.7819863,
+    "lng": 106.6912377,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "2"
+  },
+  "Hồ Chí Minh_Quận 3_3": {
+    "lat": 10.7763982,
+    "lng": 106.6854039,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "3"
+  },
+  "Hồ Chí Minh_Quận 3_4": {
+    "lat": 10.7790996,
+    "lng": 106.6914967,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "4"
+  },
+  "Hồ Chí Minh_Quận 3_5": {
+    "lat": 10.7824457,
+    "lng": 106.6497871,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "5"
+  },
+  "Hồ Chí Minh_Quận 3_9": {
+    "lat": 10.7824457,
+    "lng": 106.6497871,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 3",
+    "ward": "9"
+  },
+  "Hồ Chí Minh_Quận 3_Võ Thị Sáu": null,
+  "Hồ Chí Minh_Quận 4_1": {
+    "lat": 10.7640269,
+    "lng": 106.7488015,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "1"
+  },
+  "Hồ Chí Minh_Quận 4_13": {
+    "lat": 10.7202095,
+    "lng": 106.7284071,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "13"
+  },
+  "Hồ Chí Minh_Quận 4_15": {
+    "lat": 10.7803088,
+    "lng": 106.7054885,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "15"
+  },
+  "Hồ Chí Minh_Quận 4_16": {
+    "lat": 10.7659945,
+    "lng": 106.7042805,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "16"
+  },
+  "Hồ Chí Minh_Quận 4_18": {
+    "lat": 10.7721864,
+    "lng": 106.6903094,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "18"
+  },
+  "Hồ Chí Minh_Quận 4_2": {
+    "lat": 10.7632768,
+    "lng": 106.7016196,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "2"
+  },
+  "Hồ Chí Minh_Quận 4_3": {
+    "lat": 10.7808592,
+    "lng": 106.6946027,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "3"
+  },
+  "Hồ Chí Minh_Quận 4_4": {
+    "lat": 10.835817,
+    "lng": 106.658993,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "4"
+  },
+  "Hồ Chí Minh_Quận 4_8": {
+    "lat": 10.8079428,
+    "lng": 106.6634764,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "8"
+  },
+  "Hồ Chí Minh_Quận 4_9": {
+    "lat": 10.8060049,
+    "lng": 106.6638135,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 4",
+    "ward": "9"
+  },
+  "Hồ Chí Minh_Quận 5_1": {
+    "lat": 10.768614,
+    "lng": 106.688957,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "1"
+  },
+  "Hồ Chí Minh_Quận 5_11": {
+    "lat": 10.7412212,
+    "lng": 106.6664075,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "11"
+  },
+  "Hồ Chí Minh_Quận 5_12": {
+    "lat": 10.7722402,
+    "lng": 106.6472416,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "12"
+  },
+  "Hồ Chí Minh_Quận 5_13": {
+    "lat": 10.7729237,
+    "lng": 106.7052196,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "13"
+  },
+  "Hồ Chí Minh_Quận 5_14": {
+    "lat": 10.7689226,
+    "lng": 106.6455343,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "14"
+  },
+  "Hồ Chí Minh_Quận 5_2": {
+    "lat": 10.7416082,
+    "lng": 106.6649389,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "2"
+  },
+  "Hồ Chí Minh_Quận 5_4": {
+    "lat": 10.7497682,
+    "lng": 106.6736256,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "4"
+  },
+  "Hồ Chí Minh_Quận 5_5": {
+    "lat": 10.7421366,
+    "lng": 106.666184,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "5"
+  },
+  "Hồ Chí Minh_Quận 5_7": {
+    "lat": 10.7767437,
+    "lng": 106.7032488,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "7"
+  },
+  "Hồ Chí Minh_Quận 5_9": {
+    "lat": 10.7589554,
+    "lng": 106.6730492,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 5",
+    "ward": "9"
+  },
+  "Hồ Chí Minh_Quận 6_1": {
+    "lat": 10.7444857,
+    "lng": 106.6298582,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 6",
+    "ward": "1"
+  },
+  "Hồ Chí Minh_Quận 6_10": {
+    "lat": 10.7765833,
+    "lng": 106.6913559,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 6",
+    "ward": "10"
+  },
+  "Hồ Chí Minh_Quận 6_11": {
+    "lat": 10.7685419,
+    "lng": 106.6452583,
+    "province": "Hồ Chí Minh",
+    "district": "Quận 6",
+    "ward": "11"
   }
 }
