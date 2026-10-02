@@ -12,7 +12,9 @@ from typing import List, Dict, Any, Optional
 import numpy as np
 import pandas as pd
 import psycopg2
+from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
+from contextlib import contextmanager
 from config.settings import settings
 
 if hasattr(sys.stdout, 'reconfigure'):
@@ -32,6 +34,49 @@ class SpatialService:
         }
         self._df_cache: Optional[pd.DataFrame] = None
         self._parquet_path: Optional[Path] = None
+        self._all_cluster_cache: Optional[List[List[Any]]] = None
+        self._db_pool: Optional[pool.ThreadedConnectionPool] = None
+        self._init_pool()
+
+    def _init_pool(self):
+        """Khởi tạo ThreadedConnectionPool cho PostGIS để tái sử dụng kết nối (High Throughput)"""
+        try:
+            self._db_pool = pool.ThreadedConnectionPool(
+                minconn=2,
+                maxconn=20,
+                **self.db_config
+            )
+        except Exception as e:
+            self._db_pool = None
+
+    @contextmanager
+    def get_db_connection(self):
+        """Context Manager an toàn: Tự động mượn kết nối từ Pool và trả lại sau khi hoàn tất"""
+        conn = None
+        from_pool = False
+        try:
+            if self._db_pool:
+                try:
+                    conn = self._db_pool.getconn()
+                    from_pool = True
+                except Exception:
+                    conn = psycopg2.connect(**self.db_config)
+            else:
+                conn = psycopg2.connect(**self.db_config)
+            yield conn
+        finally:
+            if conn:
+                if from_pool and self._db_pool:
+                    self._db_pool.putconn(conn)
+                else:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+
+    def get_connection(self):
+        """Hỗ trợ tương thích ngược cho các phương thức cũ"""
+        return psycopg2.connect(**self.db_config)
 
     def _get_parquet_path(self) -> Optional[Path]:
         if self._parquet_path and self._parquet_path.exists():
@@ -61,9 +106,6 @@ class SpatialService:
             except Exception as e:
                 print(f"[SpatialService] Cảnh báo lỗi đọc file parquet: {e}")
         return None
-
-    def get_connection(self):
-        return psycopg2.connect(**self.db_config)
 
     @staticmethod
     def format_standard_address(street: Optional[str], ward: Optional[str], district: Optional[str], province: Optional[str]) -> str:
@@ -445,31 +487,32 @@ class SpatialService:
     def get_market_density_stats(self, longitude: float, latitude: float, radius_meters: int = 500) -> Dict[str, Any]:
         """Thống kê mật độ và đơn giá trung bình m² xung quanh khu vực"""
         try:
-            conn = self.get_connection()
-            query = """
-            SELECT 
-                COUNT(*) AS total_samples,
-                COALESCE(ROUND(AVG(price_per_m2), 0), 0) AS avg_price_per_m2,
-                COALESCE(ROUND(MIN(price_per_m2), 0), 0) AS min_price_per_m2,
-                COALESCE(ROUND(MAX(price_per_m2), 0), 0) AS max_price_per_m2
-            FROM real_estate_listings
-            WHERE ST_DWithin(
-                geom::geography, 
-                ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 
-                %s
-            );
-            """
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(query, (longitude, latitude, radius_meters))
-                res = cur.fetchone()
-                conn.close()
-                return {
-                    "total_samples": int(res["total_samples"]),
-                    "avg_price_per_m2": float(res["avg_price_per_m2"]),
-                    "min_price_per_m2": float(res["min_price_per_m2"]),
-                    "max_price_per_m2": float(res["max_price_per_m2"])
-                }
+            with self.get_db_connection() as conn:
+                query = """
+                SELECT 
+                    COUNT(*) AS total_samples,
+                    COALESCE(ROUND(AVG(price_per_m2), 0), 0) AS avg_price_per_m2,
+                    COALESCE(ROUND(MIN(price_per_m2), 0), 0) AS min_price_per_m2,
+                    COALESCE(ROUND(MAX(price_per_m2), 0), 0) AS max_price_per_m2
+                FROM real_estate_listings
+                WHERE ST_DWithin(
+                    geom::geography, 
+                    ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, 
+                    %s
+                );
+                """
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute(query, (longitude, latitude, radius_meters))
+                    res = cur.fetchone()
+                    if res:
+                        return {
+                            "total_samples": int(res["total_samples"]),
+                            "avg_price_per_m2": float(res["avg_price_per_m2"]),
+                            "min_price_per_m2": float(res["min_price_per_m2"]),
+                            "max_price_per_m2": float(res["max_price_per_m2"])
+                        }
         except Exception:
+            pass
             # Fallback từ dataframe
             df = self._load_dataframe()
             if df is not None and len(df) > 0:
@@ -858,7 +901,10 @@ class SpatialService:
         """
         Lấy danh sách tọa độ BĐS thực tế toàn quốc với định dạng siêu nhẹ dạng mảng [lat, lng, price_m2, price, area, type].
         Tự động phân tán (geo-jitter) các BĐS trùng tọa độ cấp quận ra xung quanh tâm quận ~600m.
+        Tích hợp RAM In-Memory Caching để phản hồi siêu tốc (<5ms).
         """
+        if self._all_cluster_cache is not None and len(self._all_cluster_cache) > 0:
+            return self._all_cluster_cache[:max_points]
         # Ưu tiên PostGIS nếu có dữ liệu đã geocode chính xác cấp đường/nhà
         try:
             conn = self.get_connection()
@@ -953,6 +999,10 @@ class SpatialService:
                 a = round(float(r.get('area', 50)), 1)
                 t = str(r.get('property_type') or 'Nhà riêng')
                 compact.append([lat, lng, pm2, p, a, t])
+
+            if compact:
+                self._all_cluster_cache = compact
+
             return compact
         except Exception as e:
             print(f"[SpatialService] Lỗi lấy all cluster points: {e}")

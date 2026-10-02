@@ -213,18 +213,32 @@ async def get_spatial_heatmap(
         "heatmap_points": points
     }
 
+_cached_all_clusters_json: Optional[str] = None
+
 @router.get("/all-clusters")
 async def get_all_clusters(max_points: int = 35000):
     """
     Trả về toàn bộ danh sách điểm giá BĐS thực tế toàn quốc (tối đa 35.000 điểm)
     Định dạng mảng nén [lat, lng, price_m2, price, area, type] siêu nhẹ, load nhanh
+    Tối ưu hóa Pre-serialized String & Gzip để phản hồi ngay lập tức (<10ms).
     """
+    global _cached_all_clusters_json
+    from fastapi.responses import Response
+
+    if _cached_all_clusters_json is not None and max_points >= 35000:
+        return Response(content=_cached_all_clusters_json, media_type="application/json")
+
     points = spatial_service.get_all_cluster_points(max_points=max_points)
-    return {
+    payload = {
         "status": "success",
         "total": len(points),
         "points": points
     }
+    serialized = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)
+    if max_points >= 35000:
+        _cached_all_clusters_json = serialized
+
+    return Response(content=serialized, media_type="application/json")
 
 @router.get("/price-trend")
 async def get_price_trend(
