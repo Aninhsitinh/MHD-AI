@@ -21,6 +21,10 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <!-- Leaflet MarkerCluster -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="/src/styles/main.css">
 </head>
@@ -558,239 +562,7 @@
                 </div>
 
                 <div class="map-frame-card">
-                    <!-- POI Interactive Layer Toolbar (SVG Icons only, No Emoji) -->
-                    <div class="poi-layer-bar" id="poiLayerBar">
-                        <div class="poi-bar-top">
-                            <div class="poi-bar-left">
-                                <span class="poi-bar-title">
-                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76">
-                                        </polygon>
-                                    </svg>
-                                    TIỆN ÍCH NGOẠI KHU & HẠ TẦNG:
-                                </span>
-                                <div class="poi-mode-group">
-                                    <button type="button" class="poi-mode-btn active" id="btnModeRadius"
-                                        onclick="setPoiScopeMode('radius')"
-                                        title="Xem tiện ích trong bán kính 1.5km quanh tài sản đang định giá">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                        <span>Quanh BĐS (1.5km)</span>
-                                    </button>
-                                    <button type="button" class="poi-mode-btn" id="btnModeCitywide"
-                                        onclick="setPoiScopeMode('citywide')"
-                                        title="Xem mạng lưới tiện ích biểu tượng phủ sóng toàn bộ 22 Quận / Huyện TP.HCM">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                            stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                                            <path
-                                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                                            </path>
-                                        </svg>
-                                        <span>Toàn TP.HCM (22 Quận/Huyện)</span>
-                                    </button>
-                                </div>
-                                <button type="button" class="poi-toggle-all-btn" id="btnToggleAllPois"
-                                    onclick="toggleAllPoiCategories(this)" title="Bật / Tắt tất cả tiện ích">
-                                    Chọn tất cả
-                                </button>
-                            </div>
-                            <div class="poi-bar-right">
-                                <span class="poi-status-indicator" id="poiLoadingText">
-                                    <svg class="poi-spinner" width="11" height="11" viewBox="0 0 24 24" fill="none"
-                                        stroke="currentColor" stroke-width="2">
-                                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                                    </svg>
-                                    <span id="poiStatusMsg">Đang tải tiện ích...</span>
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- District Quick Switch Bar -->
-                        <div class="poi-district-bar" id="poiDistrictBar">
-                            <span class="poi-district-title">
-                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                    <circle cx="12" cy="10" r="3"></circle>
-                                </svg>
-                                ĐIỂM ĐẾN QUẬN/HUYỆN:
-                            </span>
-                            <div class="poi-district-chips">
-                                <button type="button" class="district-chip active"
-                                    onclick="jumpToDistrict('Quận 1', 10.77566, 106.70042, this)">Quận 1</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 3', 10.78436, 106.68439, this)">Quận 3</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 4', 10.76010, 106.70420, this)">Quận 4</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 5', 10.75530, 106.66680, this)">Quận 5</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 6', 10.74780, 106.63580, this)">Quận 6</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 7', 10.73450, 106.72180, this)">Quận 7</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 8', 10.73750, 106.66850, this)">Quận 8</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 10', 10.77120, 106.66720, this)">Quận 10</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 11', 10.76350, 106.64950, this)">Quận 11</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Quận 12', 10.86720, 106.64150, this)">Quận 12</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Bình Thạnh', 10.80350, 106.70950, this)">Bình
-                                    Thạnh</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Gò Vấp', 10.83850, 106.66650, this)">Gò Vấp</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Phú Nhuận', 10.79850, 106.68250, this)">Phú Nhuận</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Tân Bình', 10.79850, 106.65350, this)">Tân Bình</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Tân Phú', 10.79150, 106.62850, this)">Tân Phú</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Bình Tân', 10.75150, 106.60250, this)">Bình Tân</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('TP. Thủ Đức', 10.84950, 106.77150, this)">TP. Thủ
-                                    Đức</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Bình Chánh', 10.68750, 106.59250, this)">Bình
-                                    Chánh</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Nhà Bè', 10.69550, 106.73450, this)">Nhà Bè</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Hóc Môn', 10.88450, 106.59150, this)">Hóc Môn</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Củ Chi', 10.97250, 106.49350, this)">Củ Chi</button>
-                                <button type="button" class="district-chip"
-                                    onclick="jumpToDistrict('Cần Giờ', 10.41150, 106.95450, this)">Cần Giờ</button>
-                            </div>
-                        </div>
-
-                        <div class="poi-filter-group">
-                            <button type="button" class="poi-filter-btn active" data-cat="admin"
-                                onclick="togglePoiCategory('admin', this)"
-                                title="Tòa nhà hành chính, UBND, Công an, Cơ quan nhà nước">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <line x1="3" y1="21" x2="21" y2="21"></line>
-                                    <line x1="6" y1="21" x2="6" y2="10"></line>
-                                    <line x1="18" y1="21" x2="18" y2="10"></line>
-                                    <path d="M12 3L2 9h20L12 3z"></path>
-                                </svg>
-                                <span>Cơ Quan & Tòa Nhà</span>
-                                <span class="poi-count" id="countAdmin">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="commercial"
-                                onclick="togglePoiCategory('commercial', this)"
-                                title="Trung tâm thương mại, Siêu thị lớn">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-                                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                                    <path d="M16 10a4 4 0 0 1-8 0"></path>
-                                </svg>
-                                <span>TTTM & Siêu Thị</span>
-                                <span class="poi-count" id="countCommercial">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="hospitality"
-                                onclick="togglePoiCategory('hospitality', this)"
-                                title="Khách sạn, Resort, Tổ hợp lưu trú cao cấp">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M3 7v11"></path>
-                                    <path d="M21 18V11a2 2 0 0 0-2-2H9"></path>
-                                    <path d="M3 14h18"></path>
-                                    <circle cx="6" cy="10" r="2"></circle>
-                                </svg>
-                                <span>Khách Sạn & Dịch Vụ</span>
-                                <span class="poi-count" id="countHospitality">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="health"
-                                onclick="togglePoiCategory('health', this)"
-                                title="Bệnh viện, Phòng khám, Trung tâm y tế">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
-                                    <line x1="12" y1="8" x2="12" y2="16"></line>
-                                    <line x1="8" y1="12" x2="16" y2="12"></line>
-                                </svg>
-                                <span>Y Tế & Bệnh Viện</span>
-                                <span class="poi-count" id="countHealth">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="education"
-                                onclick="togglePoiCategory('education', this)"
-                                title="Trường học các cấp, Đại học, Học viện">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M22 10v6M2 10l10-5 10 5-10 5z"></path>
-                                    <path d="M6 12v5c3 3 9 3 12 0v-5"></path>
-                                </svg>
-                                <span>Giáo Dục & Trường Học</span>
-                                <span class="poi-count" id="countEducation">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="transit"
-                                onclick="togglePoiCategory('transit', this)"
-                                title="Ga Metro, Tàu hỏa, Bến xe buýt, Sân bay">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <rect x="4" y="3" width="16" height="13" rx="2"></rect>
-                                    <path d="M4 11h16"></path>
-                                    <circle cx="8" cy="14" r="1"></circle>
-                                    <circle cx="16" cy="14" r="1"></circle>
-                                    <path d="M7 19l-3 3M17 19l3 3"></path>
-                                </svg>
-                                <span>Giao Thông & Metro</span>
-                                <span class="poi-count" id="countTransit">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="finance"
-                                onclick="togglePoiCategory('finance', this)"
-                                title="Trụ sở ngân hàng, Chi nhánh giao dịch tài chính, ATM">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <rect x="2" y="5" width="20" height="14" rx="2"></rect>
-                                    <line x1="2" y1="10" x2="22" y2="10"></line>
-                                    <circle cx="12" cy="15" r="2"></circle>
-                                </svg>
-                                <span>Tài Chính & Ngân Hàng</span>
-                                <span class="poi-count" id="countFinance">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="green"
-                                onclick="togglePoiCategory('green', this)"
-                                title="Công viên cây xanh, Vườn hoa, Hồ nước sinh thái">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M12 19V5"></path>
-                                    <path d="M5 12l7-7 7 7"></path>
-                                    <path d="M7 17l5-5 5 5"></path>
-                                </svg>
-                                <span>Công Viên & Cảnh Quan</span>
-                                <span class="poi-count" id="countGreen">0</span>
-                            </button>
-                            <button type="button" class="poi-filter-btn active" data-cat="lifestyle"
-                                onclick="togglePoiCategory('lifestyle', this)"
-                                title="Nhà hàng, Quán cafe, Rạp phim, Thể thao / Gym">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2">
-                                    <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
-                                    <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
-                                    <line x1="6" y1="1" x2="6" y2="4"></line>
-                                    <line x1="10" y1="1" x2="10" y2="4"></line>
-                                    <line x1="14" y1="1" x2="14" y2="4"></line>
-                                </svg>
-                                <span>Ẩm Thực & Giải Trí</span>
-                                <span class="poi-count" id="countLifestyle">0</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Floating Map Action Buttons & Heatmap Legend -->
+<!-- Floating Map Action Buttons & Heatmap Legend -->
                     <div class="map-floating-actions-bar">
                         <button type="button" id="btnToggleHeatmap" class="map-floating-heat-btn"
                             onclick="togglePriceHeatmap()"
@@ -805,31 +577,54 @@
                             <span class="heatmap-live-chip">MỚI</span>
                         </button>
 
-                        <button type="button" id="btnSearchThisArea" class="map-floating-search-btn"
-                            onclick="searchCurrentViewportArea()" style="display:none;"
-                            title="Quét các tiện ích OSM xung quanh khu vực bạn đang xem">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2.5">
-                                <circle cx="11" cy="11" r="8"></circle>
-                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        <button type="button" id="btnToggleCluster" class="map-floating-heat-btn"
+                            onclick="togglePriceCluster()"
+                            title="Bật/Tắt hiển thị điểm giá BĐS thực tế (Marker Cluster)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <circle cx="5" cy="7" r="2"></circle>
+                                <circle cx="19" cy="7" r="2"></circle>
+                                <circle cx="5" cy="17" r="2"></circle>
+                                <circle cx="19" cy="17" r="2"></circle>
+                                <line x1="7" y1="7.5" x2="9.5" y2="10.5"></line>
+                                <line x1="14.5" y1="10.5" x2="17" y2="7.5"></line>
+                                <line x1="7" y1="16.5" x2="9.5" y2="13.5"></line>
+                                <line x1="14.5" y1="13.5" x2="17" y2="16.5"></line>
                             </svg>
-                            <span id="btnSearchAreaText">Quét tiện ích tại khu vực này</span>
+                            <span id="btnClusterText">Điểm giá BĐS</span>
                         </button>
+
+                        
                     </div>
 
                     <!-- Floating Heatmap Legend on Bottom Right of Map -->
                     <div id="heatmapLegend" class="map-floating-heatmap-legend" style="display:none;">
                         <div class="legend-header">
                             <span class="legend-dot-pulse"></span>
-                            <span class="legend-title-text">Biên độ giá m² khu vực</span>
+                            <span class="legend-title-text">Mật độ giá/m² khu vực</span>
+                            <span class="legend-unit-tag">Tr/m²</span>
+                            <button type="button" class="legend-close-btn" onclick="togglePriceHeatmap()" title="Ẩn bản đồ nhiệt">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                        <!-- Tick marks above gradient -->
+                        <div class="legend-tick-marks">
+                            <span class="legend-tick-mark"></span>
+                            <span class="legend-tick-mark"></span>
+                            <span class="legend-tick-mark"></span>
+                            <span class="legend-tick-mark"></span>
+                            <span class="legend-tick-mark"></span>
                         </div>
                         <div class="legend-gradient-bar"></div>
                         <div class="legend-scale-labels">
-                            <span>&lt;60Tr</span>
-                            <span>60-100Tr</span>
-                            <span>100-160Tr</span>
-                            <span>&gt;160Tr/m²</span>
+                            <span data-tip="Dưới 60 triệu đồng/m²">&lt;60Tr</span>
+                            <span data-tip="60 đến 100 triệu/m²">60-100</span>
+                            <span data-tip="100 đến 160 triệu/m²">100-160</span>
+                            <span data-tip="Trên 160 triệu đồng/m²">&gt;160Tr</span>
                         </div>
+                        <div class="legend-data-source">Nguồn: 34.955 giao dịch thực tế · PostGIS</div>
                     </div>
                     <div id="map" style="width:100%; height:520px; border-radius:0 0 12px 12px;"></div>
                 </div>
@@ -853,6 +648,23 @@
                             (CMA) chuẩn xác thực tế.
                         </p>
                     </div>
+                </div>
+
+                <!-- ── SKELETON LOADING CARD (hiển thị khi đang xử lý AI) ── -->
+                <div class="skeleton-loader" id="skeletonResultLoader">
+                    <div class="skeleton-line sk-title"></div>
+                    <div class="skeleton-line sk-price"></div>
+                    <div class="skeleton-line sk-sub"></div>
+                    <div style="height:1px; background:var(--border); margin:4px 0;"></div>
+                    <div class="skeleton-row">
+                        <div class="skeleton-line" style="height:80px; border-radius:8px;"></div>
+                        <div class="skeleton-line" style="height:80px; border-radius:8px;"></div>
+                    </div>
+                    <div class="skeleton-line sk-bar"></div>
+                    <div class="skeleton-line sk-bar-md"></div>
+                    <div class="skeleton-line sk-bar-sm"></div>
+                    <div class="skeleton-line sk-chart"></div>
+                    <div class="skeleton-line sk-bar-md"></div>
                 </div>
 
                 <div class="results-workspace-grid">
@@ -1099,25 +911,6 @@
                             </div>
                         </div>
 
-                        <!-- Proximity & Amenities Card (Pure SVG, No Emoji) -->
-                        <div class="amenities-proximity-card" id="amenitiesCard" style="display:none;">
-                            <div class="amenities-card-header">
-                                <span class="amenities-title">
-                                    <span class="svg-icon" style="color:var(--brand);"><svg width="13" height="13"
-                                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <circle cx="12" cy="12" r="10"></circle>
-                                            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76">
-                                            </polygon>
-                                        </svg></span>
-                                    Tiện Ích & Hạ Tầng Ngoại Khu Lân Cận (Bán kính 1.5km)
-                                </span>
-                                <span class="amenities-badge-tag" id="amenitiesTotalTag">0 địa điểm</span>
-                            </div>
-                            <div class="amenities-grid" id="amenitiesGridList">
-                                <!-- Dynamic amenity items rendered by JS -->
-                            </div>
-                        </div>
-
                         <!-- ── 5. 12-MONTH HISTORICAL PRICE TREND & AI FORECAST (DỮ LIỆU THẬT) ── -->
                         <div class="trend-card-section" id="priceTrendCard" style="display:none;">
                             <div class="trend-card-header">
@@ -1155,9 +948,9 @@
                                 </div>
                             </div>
 
-                            <!-- Interactive Chart Canvas -->
+                            <!-- Interactive Chart Canvas (responsive) -->
                             <div class="trend-chart-wrapper">
-                                <canvas id="priceTrendCanvas" height="200"></canvas>
+                                <canvas id="priceTrendCanvas"></canvas>
                             </div>
 
                             <!-- Real Data Insight Footer -->

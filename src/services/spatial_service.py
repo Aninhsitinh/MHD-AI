@@ -90,6 +90,100 @@ class SpatialService:
             parts.append(p)
         return ", ".join(parts) if parts else "Khu vực lân cận"
 
+    @staticmethod
+    def _diversify_comparables(candidates_list: List[Dict[str, Any]], target_lon: float, target_lat: float, limit: int = 5, min_sep_meters: float = 120.0) -> List[Dict[str, Any]]:
+        """
+        Lọc chọn danh sách BĐS so sánh phân bổ đều xung quanh vị trí thẩm định:
+        1. Phân bổ theo 4 hướng không gian (Đông, Tây, Nam, Bắc) quanh tọa độ mục tiêu.
+        2. Không cho phép các BĐS đối chứng dồn cục tại cùng 1 vị trí (khoảng cách giữa các đối chứng >= min_sep_meters).
+        """
+        if not candidates_list:
+            return []
+        if len(candidates_list) <= limit:
+            return candidates_list[:limit]
+
+        # Tính góc phương vị bearing (độ: 0-360) và phân vào 4 góc phần tư
+        def get_bearing(p_lon, p_lat):
+            d_lon = p_lon - target_lon
+            d_lat = p_lat - target_lat
+            angle = (np.degrees(np.arctan2(d_lat, d_lon)) + 360) % 360
+            return angle
+
+        # Haversine giữa 2 điểm bất kỳ
+        def point_dist(lon1, lat1, lon2, lat2):
+            dlat = np.radians(lat2 - lat1)
+            dlon = np.radians(lon2 - lon1)
+            a = np.sin(dlat / 2.0) ** 2 + np.cos(np.radians(lat1)) * np.cos(np.radians(lat2)) * np.sin(dlon / 2.0) ** 2
+            return 6371000.0 * 2.0 * np.arcsin(np.sqrt(np.clip(a, 0.0, 1.0)))
+
+        # Gán bearing cho từng candidate
+        for c in candidates_list:
+            c['_bearing'] = get_bearing(float(c.get('longitude', target_lon)), float(c.get('latitude', target_lat)))
+
+        selected: List[Dict[str, Any]] = []
+
+        # Chia 4 góc: Đông Bắc (0-90), Tây Bắc (90-180), Tây Nam (180-270), Đông Nam (270-360)
+        quadrants = [[], [], [], []]
+        for c in candidates_list:
+            b = c['_bearing']
+            q_idx = int(b // 90) % 4
+            quadrants[q_idx].append(c)
+
+        # Lấy lần lượt từ các góc khác nhau để đảm bảo phân bổ đều khắp các hướng quanh BĐS
+        # Đồng thời kiểm tra không được quá gần nhau (< min_sep_meters)
+        for round_idx in range(limit):
+            for q_idx in range(4):
+                if len(selected) >= limit:
+                    break
+                for cand in quadrants[q_idx]:
+                    if cand in selected:
+                        continue
+                    c_lon = float(cand.get('longitude', target_lon))
+                    c_lat = float(cand.get('latitude', target_lat))
+                    
+                    # Kiểm tra khoảng cách với các đối chứng đã chọn
+                    too_close = False
+                    for s in selected:
+                        s_lon = float(s.get('longitude', target_lon))
+                        s_lat = float(s.get('latitude', target_lat))
+                        if point_dist(c_lon, c_lat, s_lon, s_lat) < min_sep_meters:
+                            too_close = True
+                            break
+                    if not too_close:
+                        selected.append(cand)
+                        break
+
+        # Nếu các góc không đủ lấy do quá thưa hoặc trùng góc, lấy bổ sung từ danh sách chung
+        if len(selected) < limit:
+            for cand in candidates_list:
+                if len(selected) >= limit:
+                    break
+                if cand not in selected:
+                    c_lon = float(cand.get('longitude', target_lon))
+                    c_lat = float(cand.get('latitude', target_lat))
+                    too_close = False
+                    for s in selected:
+                        s_lon = float(s.get('longitude', target_lon))
+                        s_lat = float(s.get('latitude', target_lat))
+                        if point_dist(c_lon, c_lat, s_lon, s_lat) < (min_sep_meters * 0.5):
+                            too_close = True
+                            break
+                    if not too_close:
+                        selected.append(cand)
+
+        # Fallback lấy đủ số lượng
+        for cand in candidates_list:
+            if len(selected) >= limit:
+                break
+            if cand not in selected:
+                selected.append(cand)
+
+        # Dọn dẹp trường tạm
+        for s in selected:
+            s.pop('_bearing', None)
+
+        return selected[:limit]
+
     def _find_comparables_from_parquet(
         self,
         longitude: float,
@@ -158,9 +252,10 @@ class SpatialService:
 
         # 5. Tính điểm số tương đồng (kết hợp khoảng cách và độ lệch diện tích)
         candidates['sim_score'] = np.abs(candidates['area'] - t_area) * 0.4 + candidates['distance_meters'] * 0.05
-        top = candidates.sort_values('sim_score').head(limit)
+        # Lấy pool 25 ứng viên tốt nhất để lọc phân bổ đều các hướng không dồn cục
+        top = candidates.sort_values('sim_score').head(max(limit * 5, 25))
 
-        results = []
+        cand_list = []
         for _, row in top.iterrows():
             dist_val = float(row['distance_meters'])
             if dist_val > MAX_RADIUS_METERS:
@@ -170,7 +265,7 @@ class SpatialService:
             r_price = float(row.get('price', 0)) if pd.notna(row.get('price')) else 0
             r_unit_price = float(row.get('price_per_m2', 0)) if pd.notna(row.get('price_per_m2')) else (r_price / r_area if r_area > 0 else 0)
 
-            results.append({
+            cand_list.append({
                 "name": str(row.get("name", "BĐS đối chứng thực tế")),
                 "property_type": str(row.get("property_type", property_type)),
                 "province_name": str(row.get("province_name", province_name or "Hồ Chí Minh")),
@@ -201,7 +296,8 @@ class SpatialService:
                 )
             })
 
-        return results
+        # Phân bổ đều khắp 4 hướng quanh BĐS mục tiêu và cách nhau tối thiểu 120m
+        return self._diversify_comparables(cand_list, longitude, latitude, limit=limit, min_sep_meters=120.0)
 
     def find_comparable_properties(
         self,
@@ -248,6 +344,7 @@ class SpatialService:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 results = []
 
+                cand_limit = max(limit * 5, 25)
                 # TIER 1: Cùng Quận/Huyện + Cùng Loại hình + Quy mô tương đồng + Trong bán kính <= 2000m
                 if clean_dist:
                     q_tier1 = f"""
@@ -266,7 +363,7 @@ class SpatialService:
                     ORDER BY (ABS(area - %s) * 0.4 + distance_meters * 0.05) ASC
                     LIMIT %s;
                     """
-                    cur.execute(q_tier1, (longitude, latitude, clean_dist, t_area * 0.4, t_area * 2.2, longitude, latitude, max_radius, t_area, limit))
+                    cur.execute(q_tier1, (longitude, latitude, clean_dist, t_area * 0.4, t_area * 2.2, longitude, latitude, max_radius, t_area, cand_limit))
                     results = cur.fetchall()
 
                 # TIER 2: Nếu chưa đủ trong cùng quận, mở rộng trong bán kính <= 2000m cùng loại hình
@@ -286,7 +383,7 @@ class SpatialService:
                     ORDER BY (ABS(area - %s) * 0.4 + distance_meters * 0.05) ASC
                     LIMIT %s;
                     """
-                    cur.execute(q_tier2, (longitude, latitude, t_area * 0.35, t_area * 2.5, longitude, latitude, max_radius, t_area, limit))
+                    cur.execute(q_tier2, (longitude, latitude, t_area * 0.35, t_area * 2.5, longitude, latitude, max_radius, t_area, cand_limit))
                     results = cur.fetchall()
 
                 # TIER 3: Mở rộng loại hình nhưng VẪN PHẢI trong bán kính <= 2000m
@@ -305,7 +402,7 @@ class SpatialService:
                     ORDER BY (ABS(area - %s) * 0.4 + distance_meters * 0.05) ASC
                     LIMIT %s;
                     """
-                    cur.execute(q_tier3, (longitude, latitude, t_area * 0.3, t_area * 3.0, longitude, latitude, max_radius, t_area, limit))
+                    cur.execute(q_tier3, (longitude, latitude, t_area * 0.3, t_area * 3.0, longitude, latitude, max_radius, t_area, cand_limit))
                     results = cur.fetchall()
 
                 formatted = []
@@ -329,7 +426,8 @@ class SpatialService:
                     formatted.append(r)
 
                 if len(formatted) > 0:
-                    return formatted
+                    # Phân bổ đều khắp 4 hướng xung quanh BĐS thẩm định, không để tập trung tại 1 điểm
+                    return self._diversify_comparables(formatted, longitude, latitude, limit=limit, min_sep_meters=120.0)
 
         except Exception as query_err:
             print(f"[SpatialService] Lỗi truy vấn PostGIS: {query_err}, chuyển sang Parquet fallback.")
@@ -473,12 +571,28 @@ class SpatialService:
             FROM real_estate_listings
             WHERE ST_DWithin(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography, %s)
               AND price_per_m2 > 0
-            ORDER BY distance_meters ASC
+            ORDER BY RANDOM()
             LIMIT %s;
             """
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(query, (longitude, latitude, longitude, latitude, radius_meters, limit))
                 rows = cur.fetchall()
+                if not rows:
+                    cur.execute("""
+                        SELECT 
+                            ST_Y(geom) AS latitude,
+                            ST_X(geom) AS longitude,
+                            ROUND(price_per_m2::numeric, 0) AS price_per_m2,
+                            ROUND(price::numeric, 0) AS price,
+                            area,
+                            property_type,
+                            ROUND(ST_Distance(geom::geography, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography)::numeric, 1) AS distance_meters
+                        FROM real_estate_listings
+                        WHERE price_per_m2 > 0
+                        ORDER BY RANDOM()
+                        LIMIT %s;
+                    """, (longitude, latitude, limit))
+                    rows = cur.fetchall()
                 conn.close()
                 if rows:
                     prices = [float(r["price_per_m2"]) for r in rows if r.get("price_per_m2")]
@@ -517,10 +631,13 @@ class SpatialService:
 
             sub = df[dist_m <= radius_meters].copy()
             if len(sub) == 0:
-                sub = df.head(50).copy()
+                # Nếu vị trí chưa có tin trong bán kính hẹp (ví dụ tỉnh xa, ngoại thành), lấy mẫu ngẫu nhiên toàn quốc
+                sub = df.sample(n=min(limit, len(df)), random_state=None).copy()
             else:
                 sub['dist_m'] = dist_m[dist_m <= radius_meters]
-                sub = sub.sort_values('dist_m').head(limit)
+                if len(sub) > limit:
+                    sub = sub.sample(n=limit, random_state=None)
+                
 
             sub['pm2'] = sub.get('price_per_m2', sub['price'] / sub['area']).fillna(65000000.0)
             p_vals = sub['pm2'].values
@@ -696,5 +813,61 @@ class SpatialService:
             "is_real_data": True,
             "forecast_comment": f"Dữ liệu được tổng hợp trực tiếp từ {total_samples:,} bất động sản thật tại {clean_dist or clean_prov}. Tăng trưởng 1 năm (YoY): {yoy:+}%, quý gần nhất (QoQ): {qoq:+}%. Mô hình hồi quy AI dự báo xu hướng 3-6 tháng tới: {forecast_3m:+}%, độ lệch chuẩn thị trường {std_dev} Tr/m²."
         }
+
+    def get_all_cluster_points(self, max_points: int = 35000) -> List[List[Any]]:
+        """
+        Lấy danh sách tọa độ BĐS thực tế toàn quốc với định dạng siêu nhẹ dạng mảng [lat, lng, price_m2, price, area, type]:
+        Mỗi điểm chỉ tốn ~30 bytes JSON thay vì 300 bytes dạng Dict -> 35.000 điểm chỉ nặng ~1.2MB gzip.
+        """
+        # Thử lấy từ PostGIS trước
+        try:
+            conn = self.get_connection()
+            query = """
+            SELECT 
+                ROUND(ST_Y(geom)::numeric, 5) AS lat,
+                ROUND(ST_X(geom)::numeric, 5) AS lng,
+                ROUND(price_per_m2::numeric, 0) AS pm2,
+                ROUND(price::numeric, 0) AS p,
+                ROUND(area::numeric, 1) AS a,
+                property_type AS t
+            FROM real_estate_listings
+            WHERE price_per_m2 > 0
+            ORDER BY RANDOM()
+            LIMIT %s;
+            """
+            with conn.cursor() as cur:
+                cur.execute(query, (max_points,))
+                rows = cur.fetchall()
+                conn.close()
+                if rows:
+                    return [[float(r[0]), float(r[1]), int(r[2]), int(r[3]), float(r[4]), str(r[5] or "Nhà riêng")] for r in rows]
+        except Exception:
+            pass
+
+        # Fallback từ tập dữ liệu Parquet sạch
+        df = self._load_dataframe()
+        if df is None or len(df) == 0:
+            return []
+
+        try:
+            sub = df[df['price_per_m2'] > 0].copy() if 'price_per_m2' in df.columns else df.copy()
+            if len(sub) > max_points:
+                sub = sub.sample(n=max_points, random_state=None)
+            
+            sub['pm2'] = sub.get('price_per_m2', sub['price'] / sub['area']).fillna(65000000.0)
+            
+            compact = []
+            for _, r in sub.iterrows():
+                lat = round(float(r['latitude']), 5)
+                lng = round(float(r['longitude']), 5)
+                pm2 = int(round(float(r['pm2']), 0))
+                p = int(round(float(r.get('price', 0)), 0))
+                a = round(float(r.get('area', 50)), 1)
+                t = str(r.get('property_type') or 'Nhà riêng')
+                compact.append([lat, lng, pm2, p, a, t])
+            return compact
+        except Exception as e:
+            print(f"[SpatialService] Lỗi lấy all cluster points: {e}")
+            return []
 
 spatial_service = SpatialService()

@@ -213,6 +213,19 @@ async def get_spatial_heatmap(
         "heatmap_points": points
     }
 
+@router.get("/all-clusters")
+async def get_all_clusters(max_points: int = 35000):
+    """
+    Trả về toàn bộ danh sách điểm giá BĐS thực tế toàn quốc (tối đa 35.000 điểm)
+    Định dạng mảng nén [lat, lng, price_m2, price, area, type] siêu nhẹ, load nhanh
+    """
+    points = spatial_service.get_all_cluster_points(max_points=max_points)
+    return {
+        "status": "success",
+        "total": len(points),
+        "points": points
+    }
+
 @router.get("/price-trend")
 async def get_price_trend(
     district_name: Optional[str] = None,

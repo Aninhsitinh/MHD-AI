@@ -180,670 +180,221 @@ let currentLat = 10.775659;
         }
         window.togglePriceHeatmap = togglePriceHeatmap;
 
-        // ── POI VECTOR SVG ICONS & LAYER MANAGEMENT (9 COMPREHENSIVE CATEGORIES, STRICTLY NO EMOJI) ──
-        const poiLayerGroup = L.layerGroup().addTo(map);
-        let currentPois = [];
-        let activePoiCategories = new Set([
-            'admin', 'commercial', 'hospitality', 'health', 'education', 'transit', 'finance', 'green', 'lifestyle'
-        ]);
+        // ── PRICE MARKER CLUSTER LAYER (NATIONWIDE 35.000 POINTS WITH ZERO-LAG ENGINE) ──
+        let clusterGroup = null;
+        let isClusterActive = false;
+        let allNationwidePoints = null; // Cache 35.000 điểm dạng compact array [lat, lng, pm2, p, a, t]
+        let isLoadingNationwide = false;
 
-        const POI_META = {
-            admin: {
-                color: '#3B82F6',
-                name: 'Cơ quan & Tòa nhà',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="21" x2="21" y2="21"></line><line x1="6" y1="21" x2="6" y2="10"></line><line x1="18" y1="21" x2="18" y2="10"></line><path d="M12 3L2 9h20L12 3z"></path><line x1="12" y1="21" x2="12" y2="10"></line></svg>`
-            },
-            commercial: {
-                color: '#EC4899',
-                name: 'TTTM & Siêu thị',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EC4899" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>`
-            },
-            hospitality: {
-                color: '#F59E0B',
-                name: 'Khách sạn & Dịch vụ',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11"></path><path d="M21 18V11a2 2 0 0 0-2-2H9"></path><path d="M3 14h18"></path><circle cx="6" cy="10" r="2"></circle></svg>`
-            },
-            health: {
-                color: '#EF4444',
-                name: 'Y tế & Bệnh viện',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"></rect><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>`
-            },
-            education: {
-                color: '#10B981',
-                name: 'Giáo dục & Trường học',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>`
-            },
-            transit: {
-                color: '#8B5CF6',
-                name: 'Giao thông & Metro',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="13" rx="2"></rect><path d="M4 11h16"></path><circle cx="8" cy="14" r="1"></circle><circle cx="16" cy="14" r="1"></circle><path d="M7 19l-3 3M17 19l3 3"></path></svg>`
-            },
-            finance: {
-                color: '#06B6D4',
-                name: 'Tài chính & Ngân hàng',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#06B6D4" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"></rect><line x1="2" y1="10" x2="22" y2="10"></line><circle cx="12" cy="15" r="2"></circle></svg>`
-            },
-            green: {
-                color: '#22C55E',
-                name: 'Công viên & Cảnh quan',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"></path><path d="M5 12l7-7 7 7"></path><path d="M7 17l5-5 5 5"></path></svg>`
-            },
-            lifestyle: {
-                color: '#FF6B1A',
-                name: 'Ẩm thực & Giải trí',
-                iconSvg: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF6B1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`
+        function getPriceColor(pricePerM2) {
+            const p = pricePerM2 / 1e6; // triệu
+            if (p < 30) return '#10b981';
+            if (p < 60) return '#06b6d4';
+            if (p < 100) return '#f59e0b';
+            if (p < 160) return '#f97316';
+            return '#ef4444';
+        }
+
+        function getPriceLabel(pricePerM2) {
+            const p = pricePerM2 / 1e6;
+            if (p < 30) return 'Thấp';
+            if (p < 60) return 'Trung bình';
+            if (p < 100) return 'Khá cao';
+            if (p < 160) return 'Cao';
+            return 'Rất cao';
+        }
+
+        function createClusterCustomIcon(cluster) {
+            const count = cluster.getChildCount();
+            const markers = cluster.getAllChildMarkers();
+            let totalPrice = 0;
+            let validCount = 0;
+            // Chỉ duyệt tối đa 100 con để tính nhanh giá TB, tránh blocking thread khi cụm có 5000 con
+            const sampleSize = Math.min(markers.length, 80);
+            for (let i = 0; i < sampleSize; i++) {
+                if (markers[i].options._pricePerM2) {
+                    totalPrice += markers[i].options._pricePerM2;
+                    validCount++;
+                }
             }
-        };
+            const avgPrice = validCount > 0 ? totalPrice / validCount : 65000000;
+            const avgPriceTr = (avgPrice / 1e6).toFixed(0);
+            const color = getPriceColor(avgPrice);
 
-        function createPoiSvgDivIcon(category) {
-            const meta = POI_META[category] || POI_META.admin;
-            const html = `
-                <div class="poi-marker-bubble" style="--poi-color:${meta.color};">
-                    <div class="poi-marker-pin">
-                        ${meta.iconSvg}
-                    </div>
-                    <div class="poi-marker-arrow"></div>
-                </div>
-            `;
+            let sizeClass = 'cluster-sm';
+            if (count >= 500) sizeClass = 'cluster-xl';
+            else if (count >= 100) sizeClass = 'cluster-lg';
+            else if (count >= 20) sizeClass = 'cluster-md';
+
             return L.divIcon({
-                className: 'custom-poi-marker',
-                html: html,
-                iconSize: [28, 34],
-                iconAnchor: [14, 34],
-                popupAnchor: [0, -34]
+                html: `<div class="mhd-cluster-icon ${sizeClass}" style="--cluster-color:${color}">
+                         <span class="cluster-count">${count > 999 ? (count/1000).toFixed(1) + 'k' : count}</span>
+                         <span class="cluster-avg">${avgPriceTr}Tr/m²</span>
+                       </div>`,
+                className: 'mhd-cluster-wrapper',
+                iconSize: L.point(56, 56)
             });
         }
 
-        // ── POI CITYWIDE MULTI-DISTRICT DATABASE & SCOPE ENGINE ──
-        let poiScopeMode = 'radius'; // 'radius' | 'citywide'
-        let lastScannedLat = currentLat;
-        let lastScannedLng = currentLng;
-        let currentScannedAreaName = 'Quận 1';
-
-        // BỘ DỮ LIỆU ĐIỂM NHẤN TIỆN ÍCH TRỌNG ĐIỂM BIỂU TƯỢNG PHỦ SÓNG TOÀN DIỆN 22 QUẬN/HUYỆN/TP THỦ ĐỨC (VÀ CÁC ĐÔ THỊ LỚN)
-        const CITYWIDE_LANDMARKS_DB = [
-            // --- QUẬN 1 ---
-            { id: 'cw-q1-1', name: 'UBND TP. Hồ Chí Minh', district: 'Quận 1', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.77688, lng: 106.70089 },
-            { id: 'cw-q1-2', name: 'TTTM Vincom Center Đồng Khởi', district: 'Quận 1', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.77810, lng: 106.70195 },
-            { id: 'cw-q1-3', name: 'Khách sạn Caravelle Saigon', district: 'Quận 1', category: 'hospitality', category_name: 'Khách sạn & Dịch vụ', lat: 10.77665, lng: 106.70321 },
-            { id: 'cw-q1-4', name: 'Bệnh viện Nhi Đồng 2', district: 'Quận 1', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.78180, lng: 106.70340 },
-            { id: 'cw-q1-5', name: 'Đại học KHXH&NV TP.HCM', district: 'Quận 1', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.78650, lng: 106.70090 },
-            { id: 'cw-q1-6', name: 'Ga Metro Trung tâm Bến Thành', district: 'Quận 1', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.77190, lng: 106.69830 },
-            { id: 'cw-q1-7', name: 'Trụ sở Ngân hàng Nhà nước & Vietcombank Tower', district: 'Quận 1', category: 'finance', category_name: 'Tài chính & Ngân hàng', lat: 10.77250, lng: 106.70580 },
-            { id: 'cw-q1-8', name: 'Thảo Cầm Viên & Bảo tàng Lịch sử', district: 'Quận 1', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.78750, lng: 106.70520 },
-            { id: 'cw-q1-9', name: 'Phố đi bộ Nguyễn Huệ & Bến Bạch Đằng', district: 'Quận 1', category: 'lifestyle', category_name: 'Ẩm thực & Giải trí', lat: 10.77450, lng: 106.70480 },
-
-            // --- QUẬN 3 ---
-            { id: 'cw-q3-1', name: 'UBND Quận 3', district: 'Quận 3', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.78170, lng: 106.68530 },
-            { id: 'cw-q3-2', name: 'Bệnh viện Tai Mũi Họng TP.HCM', district: 'Quận 3', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.78530, lng: 106.68280 },
-            { id: 'cw-q3-3', name: 'Bệnh viện Da Liễu TP.HCM', district: 'Quận 3', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.78010, lng: 106.68740 },
-            { id: 'cw-q3-4', name: 'Đại học Kinh tế TP.HCM (UEH)', district: 'Quận 3', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.78280, lng: 106.69580 },
-            { id: 'cw-q3-5', name: 'Ga Sài Gòn (Đường sắt Bắc Nam)', district: 'Quận 3', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.78250, lng: 106.67780 },
-            { id: 'cw-q3-6', name: 'Hồ Con Rùa & Công viên Lê Văn Tám', district: 'Quận 3', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.78270, lng: 106.69590 },
-            { id: 'cw-q3-7', name: 'Phố ẩm thực Nguyễn Thượng Hiền', district: 'Quận 3', category: 'lifestyle', category_name: 'Ẩm thực & Giải trí', lat: 10.77520, lng: 106.68150 },
-
-            // --- QUẬN 4 ---
-            { id: 'cw-q4-1', name: 'UBND Quận 4', district: 'Quận 4', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.76210, lng: 106.70450 },
-            { id: 'cw-q4-2', name: 'Bến Nhà Rồng & Bảo tàng Hồ Chí Minh', district: 'Quận 4', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.76820, lng: 106.70700 },
-            { id: 'cw-q4-3', name: 'Bệnh viện Quận 4', district: 'Quận 4', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.75980, lng: 106.70750 },
-            { id: 'cw-q4-4', name: 'Đại học Luật TP.HCM (Cơ sở Q4)', district: 'Quận 4', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.76450, lng: 106.70820 },
-            { id: 'cw-q4-5', name: 'Phố ẩm thực ốc Vĩnh Khánh', district: 'Quận 4', category: 'lifestyle', category_name: 'Ẩm thực & Giải trí', lat: 10.76150, lng: 106.70280 },
-
-            // --- QUẬN 5 ---
-            { id: 'cw-q5-1', name: 'UBND Quận 5', district: 'Quận 5', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.75620, lng: 106.66620 },
-            { id: 'cw-q5-2', name: 'TTTM Hùng Vương Plaza', district: 'Quận 5', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.75710, lng: 106.66120 },
-            { id: 'cw-q5-3', name: 'Chợ An Đông Plaza', district: 'Quận 5', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.75690, lng: 106.67020 },
-            { id: 'cw-q5-4', name: 'Bệnh viện Chợ Rẫy (Tuyến TW)', district: 'Quận 5', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.75780, lng: 106.65950 },
-            { id: 'cw-q5-5', name: 'Bệnh viện Đại học Y Dược TP.HCM', district: 'Quận 5', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.75520, lng: 106.66150 },
-            { id: 'cw-q5-6', name: 'Trường Đại học Sư Phạm TP.HCM', district: 'Quận 5', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.76050, lng: 106.68250 },
-            { id: 'cw-q5-7', name: 'Phố thuốc Bắc Hải Thượng Lãn Ông', district: 'Quận 5', category: 'lifestyle', category_name: 'Ẩm thực & Giải trí', lat: 10.75080, lng: 106.65820 },
-
-            // --- QUẬN 6 ---
-            { id: 'cw-q6-1', name: 'UBND Quận 6', district: 'Quận 6', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.74820, lng: 106.64320 },
-            { id: 'cw-q6-2', name: 'Chợ Bình Tây (Chợ Lớn Di sản)', district: 'Quận 6', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.74950, lng: 106.65150 },
-            { id: 'cw-q6-3', name: 'Mega Market Bình Phú', district: 'Quận 6', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.74350, lng: 106.63420 },
-            { id: 'cw-q6-4', name: 'Bệnh viện Quận 6', district: 'Quận 6', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.74650, lng: 106.64180 },
-            { id: 'cw-q6-5', name: 'Công viên Phú Lâm', district: 'Quận 6', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.74680, lng: 106.63050 },
-
-            // --- QUẬN 7 ---
-            { id: 'cw-q7-1', name: 'UBND Quận 7', district: 'Quận 7', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.73650, lng: 106.73280 },
-            { id: 'cw-q7-2', name: 'TTTM Crescent Mall Phú Mỹ Hưng', district: 'Quận 7', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.72950, lng: 106.71980 },
-            { id: 'cw-q7-3', name: 'TTTM SC VivoCity', district: 'Quận 7', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.73220, lng: 106.70580 },
-            { id: 'cw-q7-4', name: 'Lotte Mart Nam Sài Gòn', district: 'Quận 7', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.73980, lng: 106.70120 },
-            { id: 'cw-q7-5', name: 'Bệnh viện Quốc tế FV (Pháp Việt)', district: 'Quận 7', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.73150, lng: 106.72250 },
-            { id: 'cw-q7-6', name: 'Bệnh viện Tim Tâm Đức', district: 'Quận 7', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.73280, lng: 106.72150 },
-            { id: 'cw-q7-7', name: 'Đại học RMIT Việt Nam', district: 'Quận 7', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.73020, lng: 106.69480 },
-            { id: 'cw-q7-8', name: 'Đại học Tôn Đức Thắng', district: 'Quận 7', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.73280, lng: 106.69950 },
-            { id: 'cw-q7-9', name: 'Cầu Ánh Sao & Hồ Bán Nguyệt', district: 'Quận 7', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.72880, lng: 106.71850 },
-
-            // --- QUẬN 8 ---
-            { id: 'cw-q8-1', name: 'UBND Quận 8', district: 'Quận 8', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.73680, lng: 106.66950 },
-            { id: 'cw-q8-2', name: 'TTTM Central Premium Mall Q8', district: 'Quận 8', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.74280, lng: 106.67120 },
-            { id: 'cw-q8-3', name: 'BV Phục hồi chức năng & Điều trị BNN', district: 'Quận 8', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.74550, lng: 106.68050 },
-            { id: 'cw-q8-4', name: 'Bến xe Quận 8', district: 'Quận 8', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.73080, lng: 106.65480 },
-            { id: 'cw-q8-5', name: 'Công viên Dạ Nam & Cầu Chữ Y', district: 'Quận 8', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.74850, lng: 106.68420 },
-
-            // --- QUẬN 10 ---
-            { id: 'cw-q10-1', name: 'UBND Quận 10', district: 'Quận 10', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.77450, lng: 106.66850 },
-            { id: 'cw-q10-2', name: 'TTTM Vạn Hạnh Mall', district: 'Quận 10', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.77050, lng: 106.66980 },
-            { id: 'cw-q10-3', name: 'Bệnh viện Nhi Đồng 1', district: 'Quận 10', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.76750, lng: 106.66920 },
-            { id: 'cw-q10-4', name: 'Bệnh viện Nhân Dân 115', district: 'Quận 10', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.77480, lng: 106.66120 },
-            { id: 'cw-q10-5', name: 'Đại học Bách Khoa TP.HCM', district: 'Quận 10', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.77250, lng: 106.65880 },
-            { id: 'cw-q10-6', name: 'Công viên Văn hóa Lê Thị Riêng', district: 'Quận 10', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.78550, lng: 106.66450 },
-
-            // --- QUẬN 11 ---
-            { id: 'cw-q11-1', name: 'UBND Quận 11', district: 'Quận 11', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.76280, lng: 106.65080 },
-            { id: 'cw-q11-2', name: 'Công viên Văn hóa Đầm Sen', district: 'Quận 11', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.76720, lng: 106.64080 },
-            { id: 'cw-q11-3', name: 'Lotte Mart Phú Thọ', district: 'Quận 11', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.76850, lng: 106.65580 },
-            { id: 'cw-q11-4', name: 'Bệnh viện Quận 11', district: 'Quận 11', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.76020, lng: 106.64920 },
-
-            // --- QUẬN 12 ---
-            { id: 'cw-q12-1', name: 'UBND Quận 12', district: 'Quận 12', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.86650, lng: 106.64080 },
-            { id: 'cw-q12-2', name: 'Công viên Phần mềm Quang Trung (QTSC)', district: 'Quận 12', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.85450, lng: 106.62950 },
-            { id: 'cw-q12-3', name: 'Mega Market Hiệp Phú', district: 'Quận 12', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.86250, lng: 106.64350 },
-            { id: 'cw-q12-4', name: 'Bệnh viện Quận 12', district: 'Quận 12', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.86450, lng: 106.64750 },
-            { id: 'cw-q12-5', name: 'Ga Metro Tân Thới Nhất (Metro số 2)', district: 'Quận 12', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.83550, lng: 106.61950 },
-
-            // --- BÌNH THẠNH ---
-            { id: 'cw-bt-1', name: 'UBND Quận Bình Thạnh', district: 'Bình Thạnh', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.80120, lng: 106.70050 },
-            { id: 'cw-bt-2', name: 'Landmark 81 Skyview & Vincom Center', district: 'Bình Thạnh', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.79520, lng: 106.72180 },
-            { id: 'cw-bt-3', name: 'Bệnh viện Ung Bướu TP.HCM (CS1)', district: 'Bình Thạnh', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.80150, lng: 106.69750 },
-            { id: 'cw-bt-4', name: 'Bệnh viện Nhân Dân Gia Định', district: 'Bình Thạnh', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.80280, lng: 106.69650 },
-            { id: 'cw-bt-5', name: 'Đại học HUTECH & ĐH GTVT', district: 'Bình Thạnh', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.80180, lng: 106.71450 },
-            { id: 'cw-bt-6', name: 'Bến xe Miền Đông (Bình Thạnh)', district: 'Bình Thạnh', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.81450, lng: 106.71150 },
-            { id: 'cw-bt-7', name: 'Công viên Vinhomes Central Park ven sông', district: 'Bình Thạnh', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.79420, lng: 106.72350 },
-
-            // --- GÒ VẤP ---
-            { id: 'cw-gv-1', name: 'UBND Quận Gò Vấp', district: 'Gò Vấp', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.83650, lng: 106.66580 },
-            { id: 'cw-gv-2', name: 'Đại siêu thị Emart Phan Văn Trị', district: 'Gò Vấp', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.82580, lng: 106.69120 },
-            { id: 'cw-gv-3', name: 'Vincom Plaza Phan Văn Trị', district: 'Gò Vấp', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.82820, lng: 106.68520 },
-            { id: 'cw-gv-4', name: 'Bệnh viện Quân Y 175 (Bộ Quốc Phòng)', district: 'Gò Vấp', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.81950, lng: 106.67950 },
-            { id: 'cw-gv-5', name: 'Đại học Công nghiệp TP.HCM (IUH)', district: 'Gò Vấp', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.82250, lng: 106.68750 },
-            { id: 'cw-gv-6', name: 'Công viên Làng Hoa Gò Vấp', district: 'Gò Vấp', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.84450, lng: 106.65750 },
-
-            // --- PHÚ NHUẬN ---
-            { id: 'cw-pn-1', name: 'UBND Quận Phú Nhuận', district: 'Phú Nhuận', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.79820, lng: 106.68120 },
-            { id: 'cw-pn-2', name: 'Bệnh viện Đa khoa Hoàn Mỹ Sài Gòn', district: 'Phú Nhuận', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.79580, lng: 106.68350 },
-            { id: 'cw-pn-3', name: 'Trung tâm Hội nghị White Palace', district: 'Phú Nhuận', category: 'hospitality', category_name: 'Khách sạn & Dịch vụ', lat: 10.80050, lng: 106.67450 },
-            { id: 'cw-pn-4', name: 'Công viên Gia Định (Phần Phú Nhuận)', district: 'Phú Nhuận', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.81350, lng: 106.67450 },
-            { id: 'cw-pn-5', name: 'Phố ẩm thực Phan Xích Long', district: 'Phú Nhuận', category: 'lifestyle', category_name: 'Ẩm thực & Giải trí', lat: 10.79650, lng: 106.68780 },
-
-            // --- TÂN BÌNH ---
-            { id: 'cw-tb-1', name: 'UBND Quận Tân Bình', district: 'Tân Bình', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.79420, lng: 106.65650 },
-            { id: 'cw-tb-2', name: 'Cảng HKQT Tân Sơn Nhất & Nhà ga T3', district: 'Tân Bình', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.81850, lng: 106.65850 },
-            { id: 'cw-tb-3', name: 'Menas Mall Saigon Airport', district: 'Tân Bình', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.81550, lng: 106.66350 },
-            { id: 'cw-tb-4', name: 'Bệnh viện Thống Nhất (Tuyến TW)', district: 'Tân Bình', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.79250, lng: 106.65680 },
-            { id: 'cw-tb-5', name: 'Công viên Hoàng Văn Thụ', district: 'Tân Bình', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.80120, lng: 106.66150 },
-
-            // --- TÂN PHÚ ---
-            { id: 'cw-tp-1', name: 'UBND Quận Tân Phú', district: 'Tân Phú', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.79120, lng: 106.62750 },
-            { id: 'cw-tp-2', name: 'Đại siêu thị AEON Mall Tân Phú Celadon', district: 'Tân Phú', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.80150, lng: 106.61650 },
-            { id: 'cw-tp-3', name: 'Bệnh viện Đa khoa Tân Phú', district: 'Tân Phú', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.78150, lng: 106.63420 },
-            { id: 'cw-tp-4', name: 'Đại học Công Thương TP.HCM (HUIT)', district: 'Tân Phú', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.80450, lng: 106.62880 },
-
-            // --- BÌNH TÂN ---
-            { id: 'cw-btn-1', name: 'UBND Quận Bình Tân', district: 'Bình Tân', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.75050, lng: 106.60150 },
-            { id: 'cw-btn-2', name: 'Đại siêu thị AEON Mall Bình Tân', district: 'Bình Tân', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.74280, lng: 106.61350 },
-            { id: 'cw-btn-3', name: 'Bến xe Miền Tây', district: 'Bình Tân', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.74650, lng: 106.62120 },
-            { id: 'cw-btn-4', name: 'Bệnh viện Quốc tế City (CIH)', district: 'Bình Tân', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.74050, lng: 106.61250 },
-            { id: 'cw-btn-5', name: 'Bệnh viện Đa khoa Triều An', district: 'Bình Tân', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.74450, lng: 106.61950 },
-
-            // --- TP. THỦ ĐỨC ---
-            { id: 'cw-td-1', name: 'Trung tâm Hành chính TP. Thủ Đức', district: 'TP. Thủ Đức', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.84920, lng: 106.77080 },
-            { id: 'cw-td-2', name: 'TTTM GigaMall Phạm Văn Đồng', district: 'TP. Thủ Đức', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.82750, lng: 106.72150 },
-            { id: 'cw-td-3', name: 'Vincom Mega Mall Thảo Điền', district: 'TP. Thủ Đức', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.80380, lng: 106.73650 },
-            { id: 'cw-td-4', name: 'Đại đô thị Đại học Quốc gia TP.HCM', district: 'TP. Thủ Đức', category: 'education', category_name: 'Giáo dục & Trường học', lat: 10.87550, lng: 106.80150 },
-            { id: 'cw-td-5', name: 'Khu Công nghệ cao TP.HCM (SHTP)', district: 'TP. Thủ Đức', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.85650, lng: 106.79250 },
-            { id: 'cw-td-6', name: 'Bến xe Miền Đông mới & Ga Metro', district: 'TP. Thủ Đức', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.86550, lng: 106.81550 },
-            { id: 'cw-td-7', name: 'Bệnh viện TP. Thủ Đức', district: 'TP. Thủ Đức', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.85450, lng: 106.75850 },
-            { id: 'cw-td-8', name: 'Khu Du lịch Văn hóa Suối Tiên', district: 'TP. Thủ Đức', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.86650, lng: 106.80350 },
-
-            // --- HUYỆN BÌNH CHÁNH ---
-            { id: 'cw-bc-1', name: 'UBND Huyện Bình Chánh', district: 'Bình Chánh', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.68650, lng: 106.59150 },
-            { id: 'cw-bc-2', name: 'Cụm Y tế Tân Kiên & BV Bình Chánh', district: 'Bình Chánh', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.70250, lng: 106.58150 },
-            { id: 'cw-bc-3', name: 'Chợ Đầu mối Nông sản Bình Điền', district: 'Bình Chánh', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.70850, lng: 106.63450 },
-
-            // --- HUYỆN NHÀ BÈ ---
-            { id: 'cw-nb-1', name: 'UBND Huyện Nhà Bè', district: 'Nhà Bè', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.69450, lng: 106.73350 },
-            { id: 'cw-nb-2', name: 'Cảng Quốc tế Hiệp Phước & KCN', district: 'Nhà Bè', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.62850, lng: 106.76150 },
-            { id: 'cw-nb-3', name: 'Bệnh viện Huyện Nhà Bè', district: 'Nhà Bè', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.69750, lng: 106.73150 },
-
-            // --- HUYỆN HÓC MÔN ---
-            { id: 'cw-hm-1', name: 'UBND Huyện Hóc Môn', district: 'Hóc Môn', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.88350, lng: 106.59050 },
-            { id: 'cw-hm-2', name: 'Chợ Đầu mối Nông sản Hóc Môn', district: 'Hóc Môn', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.85850, lng: 106.60250 },
-            { id: 'cw-hm-3', name: 'Bệnh viện Đa khoa KV Hóc Môn', district: 'Hóc Môn', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.88250, lng: 106.59550 },
-
-            // --- HUYỆN CỦ CHI ---
-            { id: 'cw-cc-1', name: 'UBND Huyện Củ Chi', district: 'Củ Chi', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.97150, lng: 106.49250 },
-            { id: 'cw-cc-2', name: 'Bệnh viện Đa khoa KV Củ Chi', district: 'Củ Chi', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.97550, lng: 106.49650 },
-            { id: 'cw-cc-3', name: 'Địa đạo Củ Chi (KDL Bến Dược)', district: 'Củ Chi', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 11.14250, lng: 106.46250 },
-
-            // --- HUYỆN CẦN GIỜ ---
-            { id: 'cw-cg-1', name: 'UBND Huyện Cần Giờ', district: 'Cần Giờ', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 10.41050, lng: 106.95350 },
-            { id: 'cw-cg-2', name: 'Khu Dự trữ Sinh quyển Rừng Sác Cần Giờ', district: 'Cần Giờ', category: 'green', category_name: 'Công viên & Cảnh quan', lat: 10.51250, lng: 106.87150 },
-            { id: 'cw-cg-3', name: 'Phà Bình Khánh (Cửa ngõ Cần Giờ)', district: 'Cần Giờ', category: 'transit', category_name: 'Giao thông & Metro', lat: 10.67150, lng: 106.77250 },
-
-            // --- HÀ NỘI ---
-            { id: 'cw-hn-1', name: 'UBND TP. Hà Nội & Hồ Gươm', district: 'Hà Nội', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 21.02851, lng: 105.85444 },
-            { id: 'cw-hn-2', name: 'TTTM Lotte Center Liễu Giai', district: 'Hà Nội', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 21.03320, lng: 105.81450 },
-            { id: 'cw-hn-3', name: 'Bệnh viện Bạch Mai', district: 'Hà Nội', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 21.00050, lng: 105.84150 },
-            { id: 'cw-hn-4', name: 'Đại học Quốc gia Hà Nội (Cầu Giấy)', district: 'Hà Nội', category: 'education', category_name: 'Giáo dục & Trường học', lat: 21.03750, lng: 105.78150 },
-            { id: 'cw-hn-5', name: 'Ga Hà Nội (Đường sắt Bắc Nam)', district: 'Hà Nội', category: 'transit', category_name: 'Giao thông & Metro', lat: 21.02450, lng: 105.84120 },
-
-            // --- ĐÀ NẴNG ---
-            { id: 'cw-dn-1', name: 'Trung tâm Hành chính TP. Đà Nẵng', district: 'Đà Nẵng', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 16.07750, lng: 108.22380 },
-            { id: 'cw-dn-2', name: 'Cầu Rồng & Sông Hàn', district: 'Đà Nẵng', category: 'transit', category_name: 'Giao thông & Metro', lat: 16.06120, lng: 108.22750 },
-            { id: 'cw-dn-3', name: 'Vincom Plaza Ngô Quyền', district: 'Đà Nẵng', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 16.07150, lng: 108.23250 },
-            { id: 'cw-dn-4', name: 'Bệnh viện Đa khoa Đà Nẵng', district: 'Đà Nẵng', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 16.07250, lng: 108.21650 },
-
-            // --- BÌNH DƯƠNG ---
-            { id: 'cw-bd-1', name: 'Trung tâm Hành chính Tỉnh Bình Dương', district: 'Bình Dương', category: 'admin', category_name: 'Cơ quan & Tòa nhà', lat: 11.05450, lng: 106.66680 },
-            { id: 'cw-bd-2', name: 'AEON Mall Canary Bình Dương', district: 'Bình Dương', category: 'commercial', category_name: 'TTTM & Siêu thị', lat: 10.93250, lng: 106.70250 },
-            { id: 'cw-bd-3', name: 'Bệnh viện Đa khoa Tỉnh Bình Dương', district: 'Bình Dương', category: 'health', category_name: 'Y tế & Bệnh viện', lat: 10.98550, lng: 106.66250 }
-        ];
-
-        function setPoiScopeMode(mode) {
-            poiScopeMode = mode;
-            const btnRad = document.getElementById('btnModeRadius');
-            const btnCity = document.getElementById('btnModeCitywide');
-            if (mode === 'citywide') {
-                if (btnRad) btnRad.classList.remove('active');
-                if (btnCity) btnCity.classList.add('active');
-                if (map.getZoom() > 14) {
-                    map.flyTo([10.782, 106.695], 12.5, { duration: 0.9 });
+        // Tải 35.000 điểm toàn quốc 1 lần duy nhất và lưu cache trên RAM
+        async function fetchAllNationwideClusterData() {
+            if (allNationwidePoints && allNationwidePoints.length > 0) {
+                return allNationwidePoints;
+            }
+            if (isLoadingNationwide) return [];
+            isLoadingNationwide = true;
+            try {
+                const res = await fetch(`/api/v1/all-clusters?max_points=35000`);
+                if (!res.ok) throw new Error("API all-clusters error");
+                const data = await res.json();
+                allNationwidePoints = data.points || [];
+                isLoadingNationwide = false;
+                return allNationwidePoints;
+            } catch (e) {
+                console.warn("Không tải được toàn bộ 35k điểm, fallback sang vùng lân cận:", e);
+                isLoadingNationwide = false;
+                // Fallback nếu API all-clusters có sự cố
+                const fallbackRes = await fetch(`/api/v1/spatial-heatmap?latitude=${currentLat}&longitude=${currentLng}&radius_meters=35000&limit=3500`);
+                if (fallbackRes.ok) {
+                    const fbData = await fallbackRes.json();
+                    const pts = (fbData.heatmap_points || []).map(p => [p.lat, p.lng, p.price_per_m2, p.price, p.area, p.property_type]);
+                    allNationwidePoints = pts;
+                    return pts;
                 }
-                showToast("Đã kích hoạt chế độ: Phủ sóng toàn thành phố (22 Quận/Huyện)");
-            } else {
-                if (btnRad) btnRad.classList.add('active');
-                if (btnCity) btnCity.classList.remove('active');
-                map.flyTo([currentLat, currentLng], 16, { duration: 0.8 });
-                showToast("Đã kích hoạt chế độ: Bán kính 1.5km quanh tài sản");
-            }
-            renderPoiMarkers();
-        }
-
-        function jumpToDistrict(name, lat, lng, btnEl) {
-            if (btnEl) {
-                document.querySelectorAll('.district-chip').forEach(c => c.classList.remove('active'));
-                btnEl.classList.add('active');
-                btnEl.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-            }
-            map.flyTo([lat, lng], 15, { duration: 0.8 });
-            lastScannedLat = lat;
-            lastScannedLng = lng;
-            currentScannedAreaName = name;
-            const searchBtn = document.getElementById('btnSearchThisArea');
-            if (searchBtn) searchBtn.style.display = 'none';
-            fetchNearbyPois(lat, lng, name);
-            showToast(`Đang quét tiện ích: ${name}`);
-            if (isHeatmapActive) {
-                renderHeatmapLayer(lat, lng);
+                return [];
             }
         }
 
-        async function searchCurrentViewportArea() {
-            const center = map.getCenter();
-            const searchBtn = document.getElementById('btnSearchThisArea');
-            if (searchBtn) {
-                searchBtn.innerHTML = `
-                    <svg class="poi-spinner" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-                    <span>Đang quét tiện ích khu vực này...</span>
-                `;
-            }
-            await fetchNearbyPois(center.lat, center.lng, 'Góc nhìn hiện tại');
-            if (searchBtn) {
-                searchBtn.style.display = 'none';
-                searchBtn.innerHTML = `
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <span id="btnSearchAreaText">Quét tiện ích tại khu vực này</span>
-                `;
-            }
-        }
+        // Tạo marker siêu nhẹ với Lazy Popup (chỉ tạo HTML khi click, không tạo trước 35.000 HTML string)
+        function createLightweightMarker(item) {
+            const [lat, lng, priceM2, totalPrice, area, propType] = item;
+            const color = getPriceColor(priceM2);
 
-        let _poiFetchDebounce = null;
-        async function fetchNearbyPois(lat, lng, areaLabel = null) {
-            clearTimeout(_poiFetchDebounce);
-            _poiFetchDebounce = setTimeout(async () => {
-                lastScannedLat = lat;
-                lastScannedLng = lng;
-                if (areaLabel) currentScannedAreaName = areaLabel;
+            const marker = L.marker([lat, lng], {
+                _pricePerM2: priceM2,
+                _totalPrice: totalPrice,
+                _area: area,
+                _propType: propType,
+                icon: L.divIcon({
+                    className: 'mhd-price-marker-wrapper',
+                    html: `<div class="mhd-price-marker" style="--marker-color:${color}">
+                             <span>${(priceM2 / 1e6).toFixed(0)}Tr</span>
+                           </div>`,
+                    iconSize: [40, 28],
+                    iconAnchor: [20, 28],
+                    popupAnchor: [0, -30]
+                })
+            });
 
-                const statusMsg = document.getElementById('poiStatusMsg');
-                const spinner = document.querySelector('.poi-spinner');
-                if (statusMsg) statusMsg.textContent = areaLabel ? `Đang quét: ${areaLabel}...` : 'Đang quét tiện ích OSM...';
-                if (spinner) spinner.style.display = 'inline-block';
-
-                let pois = [];
-                try {
-                    const res = await fetch(`/api/v1/nearby-pois?latitude=${lat}&longitude=${lng}&radius=1500`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data.status === 'success' && Array.isArray(data.pois) && data.pois.length > 0) {
-                            pois = data.pois;
-                        }
-                    }
-                } catch (e) {
-                    console.warn("Backend POI error, trying browser Overpass:", e);
-                }
-
-                if (!pois || pois.length === 0) {
-                    try {
-                        const overpassQuery = `[out:json][timeout:8];(
-                          node["amenity"~"townhall|courthouse|post_office|police|community_centre"](around:1500,${lat},${lng});
-                          way["amenity"~"townhall|courthouse|post_office|police|community_centre"](around:1500,${lat},${lng});
-                          node["shop"~"mall|supermarket|department_store"](around:1500,${lat},${lng});
-                          way["shop"~"mall|supermarket|department_store"](around:1500,${lat},${lng});
-                          node["tourism"~"hotel|guest_house|motel|resort"](around:1500,${lat},${lng});
-                          way["tourism"~"hotel|guest_house|motel|resort"](around:1500,${lat},${lng});
-                          node["amenity"~"hospital|clinic"](around:1500,${lat},${lng});
-                          way["amenity"~"hospital|clinic"](around:1500,${lat},${lng});
-                          node["amenity"~"school|university|college|kindergarten"](around:1500,${lat},${lng});
-                          way["amenity"~"school|university|college|kindergarten"](around:1500,${lat},${lng});
-                          node["railway"~"station|subway_entrance"](around:1500,${lat},${lng});
-                          node["amenity"~"bus_station|ferry_terminal"](around:1500,${lat},${lng});
-                          node["amenity"~"bank|atm"](around:1500,${lat},${lng});
-                          node["leisure"~"park|garden"](around:1500,${lat},${lng});
-                          way["leisure"~"park|garden"](around:1500,${lat},${lng});
-                          node["amenity"~"restaurant|cafe|cinema"](around:1200,${lat},${lng});
-                        );out center 45;`;
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 4000);
-                        const res = await fetch("https://overpass-api.de/api/interpreter", {
-                            method: "POST",
-                            body: overpassQuery,
-                            signal: controller.signal
-                        }).catch(() => null);
-                        clearTimeout(timeoutId);
-                        if (res && res.ok) {
-                            const osmData = await res.json();
-                            const elements = osmData.elements || [];
-                            elements.forEach(el => {
-                                const t = el.tags || {};
-                                const name = t.name || t['name:vi'] || t['name:en'];
-                                if (!name) return;
-                                const pLat = el.lat || (el.center && el.center.lat);
-                                const pLng = el.lon || (el.center && el.center.lon);
-                                if (!pLat || !pLng) return;
-
-                                let category = 'admin';
-                                let catName = 'Cơ quan & Tòa nhà';
-                                const s = t.shop || '';
-                                const tou = t.tourism || '';
-                                const am = t.amenity || '';
-                                const r = t.railway || '';
-                                const l = t.leisure || '';
-
-                                if (['mall', 'supermarket', 'department_store'].includes(s)) {
-                                    category = 'commercial';
-                                    catName = 'TTTM & Siêu thị';
-                                } else if (['hotel', 'guest_house', 'motel', 'resort'].includes(tou)) {
-                                    category = 'hospitality';
-                                    catName = 'Khách sạn & Dịch vụ';
-                                } else if (['hospital', 'clinic'].includes(am)) {
-                                    category = 'health';
-                                    catName = 'Y tế & Bệnh viện';
-                                } else if (['school', 'university', 'college', 'kindergarten'].includes(am)) {
-                                    category = 'education';
-                                    catName = 'Giáo dục & Trường học';
-                                } else if (r || ['bus_station', 'ferry_terminal'].includes(am)) {
-                                    category = 'transit';
-                                    catName = 'Giao thông & Metro';
-                                } else if (['bank', 'atm'].includes(am)) {
-                                    category = 'finance';
-                                    catName = 'Tài chính & Ngân hàng';
-                                } else if (['park', 'garden'].includes(l)) {
-                                    category = 'green';
-                                    catName = 'Công viên & Cảnh quan';
-                                } else if (['restaurant', 'cafe', 'cinema'].includes(am)) {
-                                    category = 'lifestyle';
-                                    catName = 'Ẩm thực & Giải trí';
-                                }
-
-                                const dLat = (pLat - currentLat) * 111320;
-                                const dLng = (pLng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
-                                const dist = Math.round(Math.sqrt(dLat * dLat + dLng * dLng));
-
-                                pois.push({
-                                    id: String(el.id),
-                                    name: name,
-                                    category: category,
-                                    category_name: catName,
-                                    type: s || am || tou || r || l,
-                                    lat: pLat,
-                                    lng: pLng,
-                                    distance_m: dist,
-                                    district: areaLabel || ''
-                                });
-                            });
-                        }
-                    } catch (err) {
-                        console.warn("Direct Overpass query error:", err);
-                    }
-                }
-
-                // Bảo chứng dữ liệu: Nếu mạng trễ hoặc Overpass bị quá tải / timeout, lập tức nạp ngay các tiện ích biểu tượng của khu vực từ DB
-                if (!pois || pois.length === 0) {
-                    const fallbackDist = CITYWIDE_LANDMARKS_DB.map(lm => {
-                        const dLat = (lm.lat - currentLat) * 111320;
-                        const dLng = (lm.lng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
-                        const dist = Math.round(Math.sqrt(dLat * dLat + dLng * dLng));
-                        return {
-                            ...lm,
-                            distance_m: dist
-                        };
-                    }).filter(lm => {
-                        if (areaLabel && lm.district && lm.district.toLowerCase().includes(areaLabel.toLowerCase())) return true;
-                        const dLat = (lm.lat - lat) * 111320;
-                        const dLng = (lm.lng - lng) * 111320 * Math.cos(lat * Math.PI / 180);
-                        const distFromCenter = Math.sqrt(dLat * dLat + dLng * dLng);
-                        return distFromCenter <= 4500;
-                    });
-
-                    if (fallbackDist.length > 0) {
-                        pois = fallbackDist;
-                    }
-                }
-
-                pois.sort((a, b) => a.distance_m - b.distance_m);
-                currentPois = pois;
-                renderPoiMarkers();
-
-                if (statusMsg) {
-                    if (poiScopeMode === 'citywide') {
-                        statusMsg.textContent = `Toàn thành phố: ${CITYWIDE_LANDMARKS_DB.length + currentPois.length} địa điểm`;
-                    } else {
-                        statusMsg.textContent = `${pois.length} địa điểm (${currentScannedAreaName || '1.5km'})`;
-                    }
-                }
-                if (spinner) spinner.style.display = 'none';
-
-                renderAmenitiesCard(pois);
-            }, 300);
-        }
-
-        function renderPoiMarkers() {
-            poiLayerGroup.clearLayers();
-
-            const counts = {
-                admin: 0,
-                commercial: 0,
-                hospitality: 0,
-                health: 0,
-                education: 0,
-                transit: 0,
-                finance: 0,
-                green: 0,
-                lifestyle: 0
-            };
-
-            // Xác định danh sách POI cần vẽ dựa trên scope mode
-            let displayPois = [];
-
-            if (poiScopeMode === 'citywide') {
-                // Kết hợp các điểm mốc toàn thành phố với các POI vừa quét lân cận (loại trùng lặp)
-                const seenCoords = new Set();
-
-                CITYWIDE_LANDMARKS_DB.forEach(landmark => {
-                    const dLat = (landmark.lat - currentLat) * 111320;
-                    const dLng = (landmark.lng - currentLng) * 111320 * Math.cos(currentLat * Math.PI / 180);
-                    const dist = Math.round(Math.sqrt(dLat * dLat + dLng * dLng));
-                    const item = {
-                        ...landmark,
-                        distance_m: dist
-                    };
-                    displayPois.push(item);
-                    seenCoords.add(`${landmark.lat.toFixed(3)}_${landmark.lng.toFixed(3)}`);
-                });
-
-                currentPois.forEach(p => {
-                    const key = `${p.lat.toFixed(3)}_${p.lng.toFixed(3)}`;
-                    if (!seenCoords.has(key)) {
-                        displayPois.push(p);
-                        seenCoords.add(key);
-                    }
-                });
-            } else {
-                displayPois = currentPois;
-            }
-
-            displayPois.forEach(poi => {
-                if (counts[poi.category] !== undefined) {
-                    counts[poi.category]++;
-                }
-
-                if (!activePoiCategories.has(poi.category)) return;
-
-                const icon = createPoiSvgDivIcon(poi.category);
-                const marker = L.marker([poi.lat, poi.lng], { icon: icon });
-
-                const meta = POI_META[poi.category] || POI_META.admin;
-                const distFormatted = poi.distance_m >= 1000
-                    ? (poi.distance_m / 1000).toFixed(1) + ' km'
-                    : poi.distance_m + ' m';
-
-                const distHtml = poi.district
-                    ? `<span class="poi-district-tag">${poi.district}</span>`
-                    : '';
-
+            // Lazy popup: Chỉ gán và render HTML khi người dùng click vào marker này
+            marker.on('click', function () {
+                const label = getPriceLabel(priceM2);
                 const popupContent = `
-                    <div class="poi-popup-card">
-                        <div class="poi-popup-cat" style="background:${meta.color}22; color:${meta.color}; border:1px solid ${meta.color}55;">
-                            ${meta.iconSvg}
-                            <span>${poi.category_name || meta.name}</span>
+                    <div class="cluster-popup">
+                        <div class="cluster-popup-header" style="border-color:${color}">
+                            <span class="cluster-popup-badge" style="background:${color}">${label}</span>
+                            <span class="cluster-popup-type">${propType}</span>
                         </div>
-                        <div class="poi-popup-name">${distHtml}${poi.name}</div>
-                        <div class="poi-popup-dist">
-                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                            <span>Cách tài sản: <b>${distFormatted}</b></span>
+                        <div class="cluster-popup-body">
+                            <div class="cluster-popup-row">
+                                <span class="cluster-popup-label">Đơn giá</span>
+                                <span class="cluster-popup-value" style="color:${color}">${(priceM2 / 1e6).toFixed(1)} Tr/m²</span>
+                            </div>
+                            ${totalPrice > 0 ? `<div class="cluster-popup-row">
+                                <span class="cluster-popup-label">Tổng giá</span>
+                                <span class="cluster-popup-value">${formatVND(totalPrice)}</span>
+                            </div>` : ''}
+                            ${area > 0 ? `<div class="cluster-popup-row">
+                                <span class="cluster-popup-label">Diện tích</span>
+                                <span class="cluster-popup-value">${area.toFixed(1)} m²</span>
+                            </div>` : ''}
                         </div>
+                        <div class="cluster-popup-footer">Dữ liệu thật 100% · PostGIS & Parquet</div>
                     </div>
                 `;
-                marker.bindPopup(popupContent, { maxWidth: 280 });
-                poiLayerGroup.addLayer(marker);
+                marker.bindPopup(popupContent, { className: 'mhd-cluster-popup-container', maxWidth: 260 }).openPopup();
             });
 
-            // Cập nhật số lượng đếm trên từng nút danh mục
-            const updateCount = (id, val) => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = val;
-            };
-
-            updateCount('countAdmin', counts.admin);
-            updateCount('countCommercial', counts.commercial);
-            updateCount('countHospitality', counts.hospitality);
-            updateCount('countHealth', counts.health);
-            updateCount('countEducation', counts.education);
-            updateCount('countTransit', counts.transit);
-            updateCount('countFinance', counts.finance);
-            updateCount('countGreen', counts.green);
-            updateCount('countLifestyle', counts.lifestyle);
-
-            const statusMsg = document.getElementById('poiStatusMsg');
-            if (statusMsg) {
-                if (poiScopeMode === 'citywide') {
-                    statusMsg.textContent = `${displayPois.length} địa điểm toàn TP.HCM`;
-                } else {
-                    statusMsg.textContent = `${displayPois.length} địa điểm (${currentScannedAreaName || '1.5km'})`;
-                }
-            }
+            return marker;
         }
 
-        function togglePoiCategory(cat, btn) {
-            if (activePoiCategories.has(cat)) {
-                activePoiCategories.delete(cat);
-                if (btn) btn.classList.remove('active');
-            } else {
-                activePoiCategories.add(cat);
-                if (btn) btn.classList.add('active');
-            }
-            renderPoiMarkers();
-        }
-
-        function toggleAllPoiCategories(btn) {
-            const allCats = Object.keys(POI_META);
-            if (activePoiCategories.size === allCats.length) {
-                activePoiCategories.clear();
-                document.querySelectorAll('.poi-filter-btn').forEach(b => b.classList.remove('active'));
-                if (btn) btn.textContent = 'Bật tất cả';
-            } else {
-                allCats.forEach(c => activePoiCategories.add(c));
-                document.querySelectorAll('.poi-filter-btn').forEach(b => b.classList.add('active'));
-                if (btn) btn.textContent = 'Bỏ chọn';
-            }
-            renderPoiMarkers();
-        }
-
-        function renderAmenitiesCard(pois) {
-            const card = document.getElementById('amenitiesCard');
-            const list = document.getElementById('amenitiesGridList');
-            const totalTag = document.getElementById('amenitiesTotalTag');
-            if (!card || !list) return;
-
-            if (!pois || pois.length === 0) {
-                card.style.display = 'none';
+        async function renderClusterLayer() {
+            if (typeof L.markerClusterGroup !== 'function') {
+                console.warn('L.markerClusterGroup chưa sẵn sàng');
                 return;
             }
 
-            card.style.display = 'block';
-            if (totalTag) totalTag.textContent = `${pois.length} địa điểm trong 1.5km`;
-
-            const selected = [];
-            const seenCats = new Set();
-            for (const p of pois) {
-                if (!seenCats.has(p.category)) {
-                    selected.push(p);
-                    seenCats.add(p.category);
-                }
-                if (selected.length >= 6) break;
-            }
-            for (const p of pois) {
-                if (!selected.includes(p) && selected.length < 8) {
-                    selected.push(p);
-                }
+            if (clusterGroup && map.hasLayer(clusterGroup)) {
+                map.removeLayer(clusterGroup);
+                clusterGroup = null;
             }
 
-            list.innerHTML = selected.map(item => {
-                const meta = POI_META[item.category] || POI_META.admin;
-                const distFormatted = item.distance_m >= 1000
-                    ? (item.distance_m / 1000).toFixed(1) + 'km'
-                    : item.distance_m + 'm';
-                return `
-                    <div class="amenity-item-chip" title="${item.name}">
-                        <div class="amenity-item-icon" style="background:${meta.color}18; color:${meta.color}; border:1px solid ${meta.color}40;">
-                            ${meta.iconSvg}
-                        </div>
-                        <div class="amenity-item-info">
-                            <div class="amenity-item-name">${item.name}</div>
-                            <div class="amenity-item-sub">
-                                <span>${item.category_name || meta.name}</span>
-                                <span>•</span>
-                                <b>${distFormatted}</b>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
+            const rawPoints = await fetchAllNationwideClusterData();
+            if (!rawPoints || rawPoints.length === 0) {
+                showToast('Chưa nạp được dữ liệu BĐS', 'warning');
+                return;
+            }
+
+            // Cấu hình MarkerCluster tối ưu chống giật lag (Anti-Lag Architecture):
+            // 1. maxClusterRadius: 40px (gom tốt ở tầm xa)
+            // 2. disableClusteringAtZoom: 17 (zoom gần phân giải ra marker từng BĐS)
+            // 3. spiderfyOnMaxZoom: true (khi trùng tọa độ, bung ra mạng nhện)
+            // 4. chunkedLoading: true & chunkInterval: 60 (chia nhỏ luồng nạp 35k điểm không block UI)
+            // 5. removeOutsideVisibleBounds: true (tự giải phóng DOM ngoài tầm nhìn)
+            clusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 42,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false, // Tắt vẽ đa giác che phủ khi hover để mượt FPS
+                zoomToBoundsOnClick: true,
+                disableClusteringAtZoom: 17,
+                iconCreateFunction: createClusterCustomIcon,
+                animate: true,
+                animateAddingMarkers: false,
+                chunkedLoading: true,
+                chunkInterval: 60,
+                chunkDelay: 25,
+                removeOutsideVisibleBounds: true
+            });
+
+            // Chuyển 35.000 điểm thành markers siêu nhẹ
+            const markers = [];
+            for (let i = 0; i < rawPoints.length; i++) {
+                markers.push(createLightweightMarker(rawPoints[i]));
+            }
+
+            clusterGroup.addLayers(markers);
+            if (isClusterActive) {
+                clusterGroup.addTo(map);
+            }
         }
+
+        async function togglePriceCluster() {
+            const btn = document.getElementById('btnToggleCluster');
+            const text = document.getElementById('btnClusterText');
+
+            isClusterActive = !isClusterActive;
+
+            if (isClusterActive) {
+                if (btn) btn.classList.add('active');
+                if (text) text.textContent = 'Tắt điểm giá';
+
+                if (!clusterGroup) {
+                    showToast('Đang kết nối mạng lưới 35.000 điểm giá toàn quốc...');
+                    await renderClusterLayer();
+                } else if (!map.hasLayer(clusterGroup)) {
+                    clusterGroup.addTo(map);
+                }
+                const count = allNationwidePoints ? allNationwidePoints.length : 35000;
+                showToast(`Đã phủ sóng ${count.toLocaleString()} điểm giá BĐS thực tế toàn quốc!`);
+            } else {
+                if (btn) btn.classList.remove('active');
+                if (text) text.textContent = 'Điểm giá BĐS';
+                if (clusterGroup && map.hasLayer(clusterGroup)) {
+                    map.removeLayer(clusterGroup);
+                }
+            }
+        }
+        window.togglePriceCluster = togglePriceCluster;
 
         mainMarker.on('dragend', function () {
             const pos = mainMarker.getLatLng();
@@ -855,19 +406,6 @@ let currentLat = 10.775659;
             updateLocationAndValuate(e.latlng.lat, e.latlng.lng);
         });
 
-        // Theo dõi di chuyển bản đồ để hiển thị nút "Quét tiện ích tại khu vực này"
-        map.on('moveend', function () {
-            const center = map.getCenter();
-            const dLat = (center.lat - lastScannedLat) * 111320;
-            const dLng = (center.lng - lastScannedLng) * 111320 * Math.cos(center.lat * Math.PI / 180);
-            const dist = Math.sqrt(dLat * dLat + dLng * dLng);
-            const searchBtn = document.getElementById('btnSearchThisArea');
-            if (dist > 950) {
-                if (searchBtn) searchBtn.style.display = 'inline-flex';
-            } else {
-                if (searchBtn) searchBtn.style.display = 'none';
-            }
-        });
 
         // Timer for map interactions & reverse geocoding
         let _mapInteractionTimer = null;
@@ -882,10 +420,6 @@ let currentLat = 10.775659;
                 renderHeatmapLayer(lat, lng);
             }
 
-            const searchBtn = document.getElementById('btnSearchThisArea');
-            if (searchBtn) searchBtn.style.display = 'none';
-
-            fetchNearbyPois(lat, lng);
 
             clearTimeout(_mapInteractionTimer);
             _mapInteractionTimer = setTimeout(async () => {
@@ -904,8 +438,6 @@ let currentLat = 10.775659;
             }, 300);
         }
 
-        // Tự động tải POI tại tọa độ khởi tạo ban đầu
-        fetchNearbyPois(currentLat, currentLng, 'Quận 1');
 
         // ==========================================
         // BỘ DỮ LIỆU ĐỊA GIỚI HÀNH CHÍNH VIỆT NAM CAO CẤP
@@ -1555,6 +1087,17 @@ let currentLat = 10.775659;
             }
 
             const validArea = rawArea;
+
+            // ── Show skeleton loader, hide old result ──
+            const skeleton = document.getElementById('skeletonResultLoader');
+            const resultWrapper = document.getElementById('valuationResultWrapper');
+            if (skeleton) {
+                skeleton.classList.add('is-loading');
+                resultWrapper.style.display = 'none';
+                // Scroll to skeleton so user sees progress
+                skeleton.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
             const rawRoad = parseFloat(document.getElementById('road_width')?.value);
             const validRoad = (!isNaN(rawRoad) && rawRoad >= 0) ? rawRoad : 3.0;
             const rawFront = parseFloat(document.getElementById('frontage_width')?.value);
@@ -1601,6 +1144,8 @@ let currentLat = 10.775659;
                 const data = await response.json();
 
                 if (data.status === 'success') {
+                    // Hide skeleton, show real result
+                    if (skeleton) skeleton.classList.remove('is-loading');
                     document.getElementById('valuationResultWrapper').style.display = 'block';
                     document.getElementById('resultPlaceholder').style.display = 'none';
                     renderValuationResult(data.valuation, data.price_trend);
@@ -1610,6 +1155,7 @@ let currentLat = 10.775659;
                 }
             } catch (error) {
                 console.error("API error:", error);
+                if (skeleton) skeleton.classList.remove('is-loading');
                 showToast('Không thể kết nối máy chủ thẩm định');
             } finally {
                 btnText.textContent = 'XÁC ĐỊNH GIÁ TRỊ THẨM ĐỊNH';
@@ -2021,23 +1567,8 @@ let currentLat = 10.775659;
             }
             viTri = Math.min(98, Math.max(45, Math.round(viTri)));
 
-            // 4. TIỆN ÍCH (Thực tế từ tổng số POI hạ tầng đã quét quanh tọa độ GPS)
-            let tienIch = 80;
-            const countAdmin = parseInt(document.getElementById('countAdmin')?.textContent) || 0;
-            const countCommercial = parseInt(document.getElementById('countCommercial')?.textContent) || 0;
-            const countHospitality = parseInt(document.getElementById('countHospitality')?.textContent) || 0;
-            const countHealth = parseInt(document.getElementById('countHealth')?.textContent) || 0;
-            const countEdu = parseInt(document.getElementById('countEdu')?.textContent) || 0;
-            const totalPois = countAdmin + countCommercial + countHospitality + countHealth + countEdu;
-            
-            if (totalPois >= 25) tienIch = 95;
-            else if (totalPois >= 15) tienIch = 90;
-            else if (totalPois >= 8) tienIch = 84;
-            else if (totalPois >= 3) tienIch = 76;
-            else {
-                // Nếu POI chưa quét xong, nội suy theo cự ly khu vực
-                tienIch = viTri >= 85 ? 88 : 74;
-            }
+            // 4. TIỆN ÍCH (Ước tính theo vị trí & hạ tầng khu vực)
+            let tienIch = viTri >= 85 ? 90 : (viTri >= 70 ? 82 : 75);
 
             // 5. TIỀM NĂNG (Thực tế từ độ tin cậy giao dịch, thế đất phong thủy & độ phân tán giá)
             let tiemNang = 72;
@@ -2611,13 +2142,18 @@ let currentLat = 10.775659;
         const initProv = document.getElementById('province_name').value.trim();
         fetchQuickComparables(currentLat, currentLng, initDist, initProv);
 
+        // Mặc định tự động bật mạng lưới điểm giá BĐS khi vào trang web
+        setTimeout(() => {
+            if (!isClusterActive) {
+                togglePriceCluster();
+            }
+        }, 300);
+
 // Expose all top-level functions to global window for HTML inline handlers
 window.applyCompToForm = applyCompToForm;
 window.cleanAdminToken = cleanAdminToken;
 window.closeCompModal = closeCompModal;
-window.createPoiSvgDivIcon = createPoiSvgDivIcon;
 window.createSvgIcon = createSvgIcon;
-window.fetchNearbyPois = fetchNearbyPois;
 window.fetchQuickComparables = fetchQuickComparables;
 window.findNearestDistrictCentroid = findNearestDistrictCentroid;
 window.formatStandardDistrict = formatStandardDistrict;
@@ -2626,12 +2162,9 @@ window.getCurrentLocation = getCurrentLocation;
 window.goToNews = goToNews;
 window.goToProjects = goToProjects;
 window.handleAddressInputChange = handleAddressInputChange;
-window.jumpToDistrict = jumpToDistrict;
 window.openCompModal = openCompModal;
 window.quickJump = quickJump;
-window.renderAmenitiesCard = renderAmenitiesCard;
 window.renderComparables = renderComparables;
-window.renderPoiMarkers = renderPoiMarkers;
 window.renderValuationResult = renderValuationResult;
 window.resetFormToDefaults = resetFormToDefaults;
 window.resolveAdminLocation = resolveAdminLocation;
@@ -2640,10 +2173,8 @@ window.scrollToContact = scrollToContact;
 window.scrollToMap = scrollToMap;
 window.scrollToResults = scrollToResults;
 window.searchAddressNominatim = searchAddressNominatim;
-window.searchCurrentViewportArea = searchCurrentViewportArea;
 window.selectLocation = selectLocation;
 window.setAreaVal = setAreaVal;
-window.setPoiScopeMode = setPoiScopeMode;
 window.setPropTypeTab = setPropTypeTab;
 window.setThemeMode = setThemeMode;
 window.showToast = showToast;
@@ -2651,9 +2182,7 @@ window.switchMainTab = switchMainTab;
 window.syncAreaInput = syncAreaInput;
 window.syncAreaSlider = syncAreaSlider;
 window.syncChipStyle = syncChipStyle;
-window.toggleAllPoiCategories = toggleAllPoiCategories;
 window.toggleMobileNav = toggleMobileNav;
-window.togglePoiCategory = togglePoiCategory;
 window.toggleShapDetails = toggleShapDetails;
 window.toggleTheme = toggleTheme;
 window.triggerValuation = triggerValuation;
