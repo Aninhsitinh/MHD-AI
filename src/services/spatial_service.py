@@ -814,12 +814,52 @@ class SpatialService:
             "forecast_comment": f"Dữ liệu được tổng hợp trực tiếp từ {total_samples:,} bất động sản thật tại {clean_dist or clean_prov}. Tăng trưởng 1 năm (YoY): {yoy:+}%, quý gần nhất (QoQ): {qoq:+}%. Mô hình hồi quy AI dự báo xu hướng 3-6 tháng tới: {forecast_3m:+}%, độ lệch chuẩn thị trường {std_dev} Tr/m²."
         }
 
+    @staticmethod
+    def _geo_jitter(lat: float, lng: float, records: pd.DataFrame, radius_deg: float = 0.006) -> pd.DataFrame:
+        """
+        Phân tán thông minh các BĐS trùng tọa độ (geocode cấp quận) ra xung quanh tâm.
+        - radius_deg ~0.006 ≈ 600m tại Việt Nam
+        - Dùng hash(ward_name + street_name) làm seed để cùng phường/đường nằm gần nhau
+        - Phân bố Gaussian cắt ngắn (truncated) để không vượt quá bán kính
+        """
+        import hashlib
+
+        n = len(records)
+        if n <= 1:
+            return records
+
+        result = records.copy()
+        jitter_lat = np.zeros(n)
+        jitter_lng = np.zeros(n)
+
+        for i, (idx, row) in enumerate(result.iterrows()):
+            ward = str(row.get('ward_name') or '')
+            street = str(row.get('street_name') or '')
+            prop_type = str(row.get('property_type') or '')
+
+            # Tạo seed xác định từ thông tin địa chỉ → cùng phường sẽ phân tán nhất quán
+            seed_str = f"{ward}_{street}_{prop_type}_{i}"
+            seed_hash = int(hashlib.md5(seed_str.encode('utf-8', errors='ignore')).hexdigest()[:8], 16)
+            rng = np.random.RandomState(seed_hash)
+
+            # Phân bố Gaussian cắt ngắn: sigma = radius/2.5 → 95% nằm trong radius
+            angle = rng.uniform(0, 2 * np.pi)
+            dist = abs(rng.normal(0, radius_deg / 2.5))
+            dist = min(dist, radius_deg)  # Truncate
+
+            jitter_lat[i] = dist * np.cos(angle)
+            jitter_lng[i] = dist * np.sin(angle) / np.cos(np.radians(lat))  # Bù méo kinh độ
+
+        result['latitude'] = result['latitude'] + jitter_lat
+        result['longitude'] = result['longitude'] + jitter_lng
+        return result
+
     def get_all_cluster_points(self, max_points: int = 35000) -> List[List[Any]]:
         """
-        Lấy danh sách tọa độ BĐS thực tế toàn quốc với định dạng siêu nhẹ dạng mảng [lat, lng, price_m2, price, area, type]:
-        Mỗi điểm chỉ tốn ~30 bytes JSON thay vì 300 bytes dạng Dict -> 35.000 điểm chỉ nặng ~1.2MB gzip.
+        Lấy danh sách tọa độ BĐS thực tế toàn quốc với định dạng siêu nhẹ dạng mảng [lat, lng, price_m2, price, area, type].
+        Tự động phân tán (geo-jitter) các BĐS trùng tọa độ cấp quận ra xung quanh tâm quận ~600m.
         """
-        # Thử lấy từ PostGIS trước
+        # Ưu tiên PostGIS nếu có dữ liệu đã geocode chính xác cấp đường/nhà
         try:
             conn = self.get_connection()
             query = """
@@ -840,7 +880,9 @@ class SpatialService:
                 rows = cur.fetchall()
                 conn.close()
                 if rows:
-                    return [[float(r[0]), float(r[1]), int(r[2]), int(r[3]), float(r[4]), str(r[5] or "Nhà riêng")] for r in rows]
+                    raw = [[float(r[0]), float(r[1]), int(r[2]), int(r[3]), float(r[4]), str(r[5] or "Nhà riêng")] for r in rows]
+                    # Kiểm tra nếu dữ liệu PostGIS cũng bị geocode cấp quận (nhiều điểm trùng)
+                    return self._apply_jitter_to_compact(raw)
         except Exception:
             pass
 
@@ -852,10 +894,56 @@ class SpatialService:
         try:
             sub = df[df['price_per_m2'] > 0].copy() if 'price_per_m2' in df.columns else df.copy()
             if len(sub) > max_points:
-                sub = sub.sample(n=max_points, random_state=None)
-            
+                sub = sub.sample(n=max_points, random_state=42)
+
             sub['pm2'] = sub.get('price_per_m2', sub['price'] / sub['area']).fillna(65000000.0)
-            
+
+            # 1. Tải cache tọa độ Phường/Xã nếu có
+            import json
+            from pathlib import Path
+            ward_cache_file = Path("data/processed/ward_coordinates.json")
+            ward_coords = {}
+            if ward_cache_file.exists():
+                try:
+                    with open(ward_cache_file, "r", encoding="utf-8") as f:
+                        raw_wc = json.load(f)
+                        ward_coords = {k: (v["lat"], v["lng"]) for k, v in raw_wc.items() if v and "lat" in v}
+                except Exception:
+                    pass
+
+            # 2. Cập nhật tọa độ cấp Phường cho các bản ghi có tên phường
+            if ward_coords:
+                def get_ward_point(row):
+                    p = str(row.get('province_name') or '')
+                    d = str(row.get('district_name') or '')
+                    w = str(row.get('ward_name') or '')
+                    key = f"{p}_{d}_{w}"
+                    if key in ward_coords:
+                        return ward_coords[key]
+                    return None
+
+                ward_pts = sub.apply(get_ward_point, axis=1)
+                matched_mask = ward_pts.notna()
+                if matched_mask.any():
+                    matched_coords = ward_pts[matched_mask].tolist()
+                    sub.loc[matched_mask, 'latitude'] = [c[0] for c in matched_coords]
+                    sub.loc[matched_mask, 'longitude'] = [c[1] for c in matched_coords]
+
+            # 3. Phân tán thông minh (Jitter) các điểm trùng tọa độ cấp Phường/Quận
+            coord_groups = sub.groupby(['latitude', 'longitude'])
+            jittered_frames = []
+            for (lat, lng), group in coord_groups:
+                if len(group) > 1:
+                    # Bán kính phân tán: nhỏ (~300m) nếu đã có tọa độ phường, rộng hơn (~800m) nếu là tâm quận
+                    radius = 0.003 if len(group) <= 30 else 0.008
+                    jittered = self._geo_jitter(lat, lng, group, radius_deg=radius)
+                    jittered_frames.append(jittered)
+                else:
+                    jittered_frames.append(group)
+
+            if jittered_frames:
+                sub = pd.concat(jittered_frames, ignore_index=True)
+
             compact = []
             for _, r in sub.iterrows():
                 lat = round(float(r['latitude']), 5)
@@ -870,4 +958,39 @@ class SpatialService:
             print(f"[SpatialService] Lỗi lấy all cluster points: {e}")
             return []
 
+    @staticmethod
+    def _apply_jitter_to_compact(raw: List[List[Any]], threshold: int = 10, radius_deg: float = 0.006) -> List[List[Any]]:
+        """
+        Áp dụng geo-jitter lên dữ liệu compact [lat, lng, pm2, p, a, t] từ PostGIS
+        nếu phát hiện nhiều điểm trùng tọa độ (geocode cấp quận).
+        """
+        from collections import defaultdict
+        import hashlib
+
+        # Nhóm theo tọa độ gốc
+        coord_map = defaultdict(list)
+        for i, pt in enumerate(raw):
+            key = (round(pt[0], 4), round(pt[1], 4))
+            coord_map[key].append(i)
+
+        result = [list(pt) for pt in raw]
+        for (base_lat, base_lng), indices in coord_map.items():
+            if len(indices) <= threshold:
+                continue
+            # Phân tán nhóm trùng
+            for seq, idx in enumerate(indices):
+                seed_str = f"{base_lat}_{base_lng}_{seq}_{result[idx][2]}"
+                seed_hash = int(hashlib.md5(seed_str.encode('utf-8', errors='ignore')).hexdigest()[:8], 16)
+                rng = np.random.RandomState(seed_hash)
+
+                angle = rng.uniform(0, 2 * np.pi)
+                dist = min(abs(rng.normal(0, radius_deg / 2.5)), radius_deg)
+                cos_lat = np.cos(np.radians(base_lat))
+
+                result[idx][0] = round(base_lat + dist * np.cos(angle), 5)
+                result[idx][1] = round(base_lng + dist * np.sin(angle) / max(cos_lat, 0.01), 5)
+
+        return result
+
 spatial_service = SpatialService()
+

@@ -280,9 +280,9 @@ let currentLat = 10.775659;
                     html: `<div class="mhd-price-marker" style="--marker-color:${color}">
                              <span>${(priceM2 / 1e6).toFixed(0)}Tr</span>
                            </div>`,
-                    iconSize: [40, 28],
-                    iconAnchor: [20, 28],
-                    popupAnchor: [0, -30]
+                    iconSize: [36, 24],
+                    iconAnchor: [18, 24],
+                    popupAnchor: [0, -26]
                 })
             });
 
@@ -335,18 +335,19 @@ let currentLat = 10.775659;
                 return;
             }
 
-            // Cấu hình MarkerCluster tối ưu chống giật lag (Anti-Lag Architecture):
-            // 1. maxClusterRadius: 40px (gom tốt ở tầm xa)
-            // 2. disableClusteringAtZoom: 17 (zoom gần phân giải ra marker từng BĐS)
-            // 3. spiderfyOnMaxZoom: true (khi trùng tọa độ, bung ra mạng nhện)
-            // 4. chunkedLoading: true & chunkInterval: 60 (chia nhỏ luồng nạp 35k điểm không block UI)
+            // Cấu hình MarkerCluster tối ưu chống giật lag + chống chồng chéo:
+            // 1. maxClusterRadius: 60px (gom mạnh hơn, ít marker lẻ chồng nhau)
+            // 2. disableClusteringAtZoom: 19 (chỉ bung marker đơn ở zoom rất gần)
+            // 3. spiderfyOnMaxZoom: true + spiderfyDistanceMultiplier: 1.5 (giãn cách mạng nhện)
+            // 4. chunkedLoading: true & chunkInterval: 60 (chia nhỏ luồng nạp 35k không block UI)
             // 5. removeOutsideVisibleBounds: true (tự giải phóng DOM ngoài tầm nhìn)
             clusterGroup = L.markerClusterGroup({
-                maxClusterRadius: 42,
+                maxClusterRadius: 60,
                 spiderfyOnMaxZoom: true,
-                showCoverageOnHover: false, // Tắt vẽ đa giác che phủ khi hover để mượt FPS
+                spiderfyDistanceMultiplier: 1.5,
+                showCoverageOnHover: false,
                 zoomToBoundsOnClick: true,
-                disableClusteringAtZoom: 17,
+                disableClusteringAtZoom: 19,
                 iconCreateFunction: createClusterCustomIcon,
                 animate: true,
                 animateAddingMarkers: false,

@@ -3678,13 +3678,13 @@
             background: var(--marker-color, #E05400);
             color: #fff;
             font-family: var(--font-heading);
-            font-size: 10.5px;
+            font-size: 9.5px;
             font-weight: 800;
-            padding: 3px 8px;
+            padding: 2px 6px;
             border-radius: 999px;
             white-space: nowrap;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.35), 0 0 0 2px rgba(255,255,255,0.15);
-            border: 1.5px solid rgba(255,255,255,0.3);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.35), 0 0 0 1.5px rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
             transition: transform 0.15s ease, box-shadow 0.15s ease;
             cursor: pointer;
             position: relative;
@@ -3694,17 +3694,18 @@
         .mhd-price-marker::after {
             content: '';
             position: absolute;
-            bottom: -5px;
+            bottom: -4px;
             left: 50%;
             transform: translateX(-50%);
             width: 0; height: 0;
-            border-left: 5px solid transparent;
-            border-right: 5px solid transparent;
-            border-top: 5px solid var(--marker-color, #E05400);
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+            border-top: 4px solid var(--marker-color, #E05400);
         }
         .mhd-price-marker:hover {
-            transform: scale(1.15) translateY(-2px);
+            transform: scale(1.2) translateY(-2px);
             box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 12px var(--marker-color);
+            z-index: 9999 !important;
         }
 
         /* Cluster Popup */
